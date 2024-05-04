@@ -19,9 +19,12 @@ fn main() {
             let window = app.get_webview_window("main").unwrap();
 
             // Step 1: get the HWND of the window
-            let hwnd = window.hwnd().expect("couldn't get HWND");
 
-            println!("HWND: {:?}", hwnd);
+            #[cfg(target_os = "windows")]
+            {
+                let hwnd = window.hwnd().expect("couldn't get HWND");
+                println!("HWND: {:?}", hwnd);
+            }
 
             // Step 2: pass HWND to our C++/C# code and run AppWindow methods.
 
