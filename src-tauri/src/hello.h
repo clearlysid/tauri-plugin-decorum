@@ -2,8 +2,10 @@
 
 #include <memory>
 
-namespace farzi{
-    namespace tauri{
-void print_hello_world();
-}
+namespace farzi
+{
+    namespace tauri
+    {
+        void print_hello_world();
+    }
 }
