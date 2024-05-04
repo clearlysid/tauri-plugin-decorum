@@ -3,13 +3,12 @@
 
 use tauri::Manager;
 
-#[cxx::bridge]
-mod ffi {
+#[cxx::bridge(namespace = "farzi::tauri")]
+pub mod ffi {
     unsafe extern "C++" {
-        include!("src-tauri\src\include\hello.h");
-
+        include!("src/hello.h");
         // Functions implemented in C++.
-        fn print_hello_world();
+        pub fn print_hello_world();
     }
 }
 
