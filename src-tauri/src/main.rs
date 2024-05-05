@@ -40,25 +40,26 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
-            let window = app.get_webview_window("main").unwrap();
-
-            window
-                .set_decorations(false)
-                .expect("couldn't set decorations");
-            window.set_shadow(true).expect("couldn't set shadow");
-
-            // Step 1: get the HWND of the window
-
             #[cfg(target_os = "windows")]
             {
-                let hwnd = window.hwnd().expect("couldn't get HWND");
-                println!("HWND: {:?}", hwnd);
+                let window = app.get_webview_window("main").unwrap();
+
+                window
+                    .set_decorations(false)
+                    .expect("couldn't set decorations");
+                window.set_shadow(true).expect("couldn't set shadow");
+
+                window_vibrancy::apply_mica(window, Some(true)).expect("couldn't set mica");
+
+                // Step 1: get the HWND of the window
+
+                // let hwnd = window.hwnd().expect("couldn't get HWND");
+                // println!("HWND: {:?}", hwnd);
+                // // Step 2: pass HWND to our C++/C# code and run AppWindow methods.
+
+                // // TODO: call some C++/C# code here
+                // ffi::print_hello_world();
             }
-
-            // Step 2: pass HWND to our C++/C# code and run AppWindow methods.
-
-            // TODO: call some C++/C# code here
-            ffi::print_hello_world();
 
             Ok(())
         })
