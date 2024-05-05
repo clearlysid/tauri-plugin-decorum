@@ -12,6 +12,11 @@ pub mod ffi {
     }
 }
 
+#[tauri::command]
+async fn winsnap() {
+    println!("winsnap called");
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -33,6 +38,7 @@ fn main() {
 
             Ok(())
         })
+        .invoke_handler(tauri::generate_handler![winsnap])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
