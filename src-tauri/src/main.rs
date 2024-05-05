@@ -1,6 +1,10 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use enigo::{
+    Direction::{Click, Press, Release},
+    Enigo, Key, Keyboard, Settings,
+};
 use tauri::Manager;
 
 #[cxx::bridge(namespace = "farzi::tauri")]
@@ -12,9 +16,24 @@ pub mod ffi {
     }
 }
 
+fn emulate_win_z() -> Result<(), anyhow::Error> {
+    let mut enigo = Enigo::new(&Settings::default())?;
+
+    enigo.key(Key::RWin, Press)?;
+    enigo.key(Key::Unicode('z'), Click)?;
+
+    // wait 100ms  and click alt
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    enigo.key(Key::Alt, Click)?;
+
+    enigo.key(Key::RWin, Release)?;
+
+    Ok(())
+}
+
 #[tauri::command]
-async fn winsnap() {
-    println!("winsnap called");
+async fn show_snap_overlay() -> Result<(), String> {
+    emulate_win_z().map_err(|e| e.to_string())
 }
 
 fn main() {
@@ -22,6 +41,11 @@ fn main() {
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();
+
+            window
+                .set_decorations(false)
+                .expect("couldn't set decorations");
+            window.set_shadow(true).expect("couldn't set shadow");
 
             // Step 1: get the HWND of the window
 
@@ -38,7 +62,7 @@ fn main() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![winsnap])
+        .invoke_handler(tauri::generate_handler![show_snap_overlay])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
