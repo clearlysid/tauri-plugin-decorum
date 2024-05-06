@@ -1,10 +1,6 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use enigo::{
-    Direction::{Click, Press, Release},
-    Enigo, Key, Keyboard, Settings,
-};
 use tauri::Manager;
 
 #[cxx::bridge(namespace = "farzi::tauri")]
@@ -17,16 +13,38 @@ pub mod ffi {
 }
 
 fn emulate_win_z() -> Result<(), anyhow::Error> {
-    let mut enigo = Enigo::new(&Settings::default())?;
+    use windows::Win32::UI::Input::KeyboardAndMouse::{
+        SendInput, INPUT, INPUT_KEYBOARD, KEYBD_EVENT_FLAGS, KEYEVENTF_KEYUP, VIRTUAL_KEY, VK_RWIN,
+    };
 
-    enigo.key(Key::RWin, Press)?;
-    enigo.key(Key::Unicode('z'), Click)?;
+    unsafe {
+        let mut inputs: [INPUT; 4] = std::mem::zeroed();
+        inputs[0].r#type = INPUT_KEYBOARD;
+        inputs[0].Anonymous.ki.wVk = VK_RWIN;
+        inputs[0].Anonymous.ki.dwFlags = KEYBD_EVENT_FLAGS(0);
 
-    // wait 100ms  and click alt
-    std::thread::sleep(std::time::Duration::from_millis(100));
-    enigo.key(Key::Alt, Click)?;
+        inputs[1].r#type = INPUT_KEYBOARD;
+        inputs[1].Anonymous.ki.wVk = VIRTUAL_KEY('Z' as u16);
+        inputs[1].Anonymous.ki.dwFlags = KEYBD_EVENT_FLAGS(0);
 
-    enigo.key(Key::RWin, Release)?;
+        inputs[2].r#type = INPUT_KEYBOARD;
+        inputs[2].Anonymous.ki.wVk = VIRTUAL_KEY('Z' as u16);
+        inputs[2].Anonymous.ki.dwFlags = KEYEVENTF_KEYUP;
+
+        // inputs[3].r#type = INPUT_KEYBOARD;
+        // inputs[3].Anonymous.ki.wVk = VIRTUAL_KEY(0x12); // VK_MENU (Alt key)
+        // inputs[3].Anonymous.ki.dwFlags = KEYBD_EVENT_FLAGS(0);
+
+        // inputs[4].r#type = INPUT_KEYBOARD;
+        // inputs[4].Anonymous.ki.wVk = VIRTUAL_KEY(0x12); // VK_MENU (Alt key)
+        // inputs[4].Anonymous.ki.dwFlags = KEYEVENTF_KEYUP;
+
+        inputs[3].r#type = INPUT_KEYBOARD;
+        inputs[3].Anonymous.ki.wVk = VK_RWIN;
+        inputs[3].Anonymous.ki.dwFlags = KEYEVENTF_KEYUP;
+
+        SendInput(&inputs, std::mem::size_of::<INPUT>() as _);
+    }
 
     Ok(())
 }

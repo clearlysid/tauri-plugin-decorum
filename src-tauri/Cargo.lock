@@ -3309,6 +3309,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-shell",
  "window-vibrancy",
+ "windows 0.56.0",
 ]
 
 [[package]]
