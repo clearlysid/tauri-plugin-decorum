@@ -31,17 +31,25 @@ fn emulate_win_z() -> Result<(), anyhow::Error> {
         inputs[2].Anonymous.ki.wVk = VIRTUAL_KEY('Z' as u16);
         inputs[2].Anonymous.ki.dwFlags = KEYEVENTF_KEYUP;
 
-        // inputs[3].r#type = INPUT_KEYBOARD;
-        // inputs[3].Anonymous.ki.wVk = VIRTUAL_KEY(0x12); // VK_MENU (Alt key)
-        // inputs[3].Anonymous.ki.dwFlags = KEYBD_EVENT_FLAGS(0);
-
-        // inputs[4].r#type = INPUT_KEYBOARD;
-        // inputs[4].Anonymous.ki.wVk = VIRTUAL_KEY(0x12); // VK_MENU (Alt key)
-        // inputs[4].Anonymous.ki.dwFlags = KEYEVENTF_KEYUP;
-
         inputs[3].r#type = INPUT_KEYBOARD;
         inputs[3].Anonymous.ki.wVk = VK_RWIN;
         inputs[3].Anonymous.ki.dwFlags = KEYEVENTF_KEYUP;
+
+        SendInput(&inputs, std::mem::size_of::<INPUT>() as _);
+    }
+
+    // wait 100 ms
+    std::thread::sleep(std::time::Duration::from_millis(100));
+
+    unsafe {
+        let mut inputs: [INPUT; 2] = std::mem::zeroed();
+        inputs[0].r#type = INPUT_KEYBOARD;
+        inputs[0].Anonymous.ki.wVk = VIRTUAL_KEY(0x12); // VK_MENU (Alt key)
+        inputs[0].Anonymous.ki.dwFlags = KEYBD_EVENT_FLAGS(0);
+
+        inputs[1].r#type = INPUT_KEYBOARD;
+        inputs[1].Anonymous.ki.wVk = VIRTUAL_KEY(0x12); // VK_MENU (Alt key)
+        inputs[1].Anonymous.ki.dwFlags = KEYEVENTF_KEYUP;
 
         SendInput(&inputs, std::mem::size_of::<INPUT>() as _);
     }

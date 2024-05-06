@@ -27,7 +27,7 @@ const Button = ({ action }:
 				buttonEl?.addEventListener("mouseenter", () => {
 					timer = setTimeout(() => {
 						invoke("show_snap_overlay");
-					}, 1000);
+					}, 600);
 				});
 
 				buttonEl?.addEventListener("mouseleave", () => {
@@ -60,7 +60,7 @@ const Button = ({ action }:
 				buttonEl?.addEventListener("mouseenter", () => {
 					timer = setTimeout(() => {
 						invoke("show_snap_overlay");
-					}, 1000);
+					}, 600);
 				});
 
 				buttonEl?.addEventListener("mouseleave", () => {
