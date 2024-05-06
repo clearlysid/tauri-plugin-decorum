@@ -8,11 +8,13 @@
     "beforeBuildCommand": "yarn build",
     "frontendDist": "../dist"
   },
-  "app": {"windows": [
+  "app": {
+    "windows": [
       {
         "title": "tauri-windows-titlebar",
-        "width": 800,
-        "height": 600
+        "width": 600,
+        "height": 600,
+        "decorations": false
       }
     ],
     "security": {
