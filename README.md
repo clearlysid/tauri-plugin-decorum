@@ -1,1 +1,1 @@
-# Tauri Plugin transparent-titlebar
+# tauri-plugin-transparent-titlebar
