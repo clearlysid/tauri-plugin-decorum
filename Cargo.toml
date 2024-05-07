@@ -1,0 +1,19 @@
+[package]
+name = "tauri-plugin-transparent-titlebar"
+version = "0.0.0"
+authors = [ "You" ]
+description = ""
+edition = "2021"
+rust-version = "1.70"
+exclude = ["/examples", "/webview-dist", "/webview-src", "/node_modules"]
+links = "tauri-plugin-transparent-titlebar"
+
+[dependencies]
+tauri = { version = "2.0.0-beta.17" }
+serde = "1.0"
+thiserror = "1.0"
+anyhow = "1.0.83"
+windows = "0.56.0"
+
+[build-dependencies]
+tauri-plugin = { version = "2.0.0-beta.13", features = ["build"] }
