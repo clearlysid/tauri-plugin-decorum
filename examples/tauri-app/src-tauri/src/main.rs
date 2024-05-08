@@ -62,8 +62,9 @@ fn main() {
             {
                 let window = app.get_webview_window("main").unwrap();
 
-                use tauri_plugin_decorum::caller;
-
+                // use tauri_plugin_decorum::caller;
+                use tauri_plugin_decorum::Foo;
+                window.foo();
                 // use tauri_plugin_decorum::WindowFunctions;
                 tauri_plugin_decorum::caller(&window);
                 // window.set_native_titlebar();

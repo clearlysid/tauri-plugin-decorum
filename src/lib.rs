@@ -12,15 +12,26 @@ mod commands;
 use desktop::Decorum;
 
 /// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the decorum APIs.
+
+pub fn caller(win: &WebviewWindow) {
+    win.eval("console.log('Hello from Rust wala PURANA PLUGIN  bro!')")
+        .unwrap();
+}
+
+pub trait Foo {
+    fn foo(&self);
+}
+
+impl<'a> Foo for WebviewWindow {
+    fn foo(&self) {
+        self.eval("console.log('Hello from Rust wala PLUGIN  bro!')")
+            .unwrap();
+    }
+}
 // pub trait WebviewManager<R: Runtime> {
 //     fn transparent_titlebar(&self) -> &Decorum<R>;
 //     fn set_native_titlebar(&self) -> Result<(), ()>;
 // }
-pub fn caller(win: &WebviewWindow) {
-    win.eval("console.log('Hello from Rust wala PLUGIN  bro!')")
-        .unwrap();
-}
-
 // impl<R: Runtime, W: WebviewWindow> WebviewManager<R> for W {
 //     fn transparent_titlebar(&self) -> &Decorum<R> {
 //         println!("transparent_titlebar called");
