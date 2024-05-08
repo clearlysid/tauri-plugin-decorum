@@ -62,19 +62,12 @@ fn main() {
             {
                 let window = app.get_webview_window("main").unwrap();
 
-                // use tauri_plugin_decorum::caller;
                 use tauri_plugin_decorum::Foo;
                 window.foo();
-                // use tauri_plugin_decorum::WindowFunctions;
-                tauri_plugin_decorum::caller(&window);
-                // window.set_native_titlebar();
-                window
-                    .eval("console.log('Hello from Rust wala app bro!')")
-                    .unwrap();
-
-                // window.set_shadow(true).expect("couldn't set shadow");
-
-                // window_vibrancy::apply_mica(window, Some(true)).expect("couldn't set mica");
+                // tauri_plugin_decorum::caller(&window);
+                // window
+                //     .eval("console.log('Hello from Rust wala app bro!')")
+                //     .unwrap();
             }
             Ok(())
         })

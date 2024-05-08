@@ -24,55 +24,17 @@ pub trait Foo {
 
 impl<'a> Foo for WebviewWindow {
     fn foo(&self) {
-        self.eval("console.log('Hello from Rust wala PLUGIN  bro!')")
+        self.eval("console.log('Hello from Rust wala PLUGIN bro!');")
             .unwrap();
     }
 }
-// pub trait WebviewManager<R: Runtime> {
-//     fn transparent_titlebar(&self) -> &Decorum<R>;
-//     fn set_native_titlebar(&self) -> Result<(), ()>;
-// }
-// impl<R: Runtime, W: WebviewWindow> WebviewManager<R> for W {
-//     fn transparent_titlebar(&self) -> &Decorum<R> {
-//         println!("transparent_titlebar called");
-//         self.state::<Decorum<R>>().inner()
-//     }
-//     fn set_native_titlebar(&self) -> Result<(), ()> {
-//         // Windows
-//         // TODO: self is Window type
-//         &self
-//             .eval("console.log('Hello from Rust wala PLUGIN  bro!')")
-//             .unwrap();
 
-//         // Get webview of this window
-//         // Run JS
-//         // JS: HELLO
-//         // &self.Eval("console.log('Hello from Rust!')").unwrap();
-//         // 1. check for presence of titlebar-elements via data
-//         // 2. if found, attach events
-//         // 3. if not found, create custom elements and attach events
-
-//         // Mac: set titlebar to overlay
-//         // #[cfg(target_os = "macos")]
-//         // {
-//         //     editor_win = editor_win
-//         //         .title_bar_style(tauri::TitleBarStyle::Overlay)
-//         //         .hidden_title(true);
-//         // }
-
-//         Ok(())
-//     }
-// }
-
-// pub trait WebviewWindowExt {
-//     fn set_decorations(&self, decorations: bool) -> Result<(), ()>;
-// }
-
-// impl WebviewWindowExt for tauri::WebviewWindow {
-//     fn set_decorations(&self, decorations: bool) -> Result<(), ()> {
-//         println!("set_decorations called");
-//         Ok(())
-//     }
+// Mac: set titlebar to overlay
+// #[cfg(target_os = "macos")]
+// {
+//     editor_win = editor_win
+//         .title_bar_style(tauri::TitleBarStyle::Overlay)
+//         .hidden_title(true);
 // }
 
 /// Initializes the plugin.
