@@ -1,6 +1,6 @@
 use tauri::{
     plugin::{Builder, TauriPlugin},
-    App, Manager, Runtime,
+    Manager, Runtime,
 };
 
 #[cfg(desktop)]
@@ -28,7 +28,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
         .on_webview_ready(|webview| {
             println!("webview is ready");
             let label = webview.label();
-            let window = webview
+            webview
                 .get_webview_window(label)
                 .expect("failed to get webview window");
 
@@ -39,7 +39,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             //     .expect("failed to set title")
             //     .set_decorations(false)
             //     .expect("failed to set decorations");
-            webview.eval("console.log('Hello from Rust!')").unwrap();
+            // webview.eval("console.log('Hello from Rust!')").unwrap();
         })
         .build()
 }
