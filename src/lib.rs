@@ -1,6 +1,6 @@
 use tauri::{
     plugin::{Builder, TauriPlugin},
-    Manager, Runtime,
+    Manager, Runtime, Webview, WebviewWindow,
 };
 
 #[cfg(desktop)]
@@ -12,39 +12,46 @@ mod commands;
 use desktop::Decorum;
 
 /// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the decorum APIs.
-pub trait WebviewWindowExt<R: Runtime> {
-    fn transparent_titlebar(&self) -> &Decorum<R>;
-    fn set_native_titlebar(&self) -> Result<(), ()>;
+// pub trait WebviewManager<R: Runtime> {
+//     fn transparent_titlebar(&self) -> &Decorum<R>;
+//     fn set_native_titlebar(&self) -> Result<(), ()>;
+// }
+pub fn caller(win: &WebviewWindow) {
+    win.eval("console.log('Hello from Rust wala PLUGIN  bro!')")
+        .unwrap();
 }
 
-impl<R: Runtime, T: Manager<R>> crate::WebviewWindowExt<R> for T {
-    fn transparent_titlebar(&self) -> &Decorum<R> {
-        println!("transparent_titlebar called");
-        self.state::<Decorum<R>>().inner()
-    }
-    fn set_native_titlebar(&self) -> Result<(), ()> {
-        // Windows
+// impl<R: Runtime, W: WebviewWindow> WebviewManager<R> for W {
+//     fn transparent_titlebar(&self) -> &Decorum<R> {
+//         println!("transparent_titlebar called");
+//         self.state::<Decorum<R>>().inner()
+//     }
+//     fn set_native_titlebar(&self) -> Result<(), ()> {
+//         // Windows
+//         // TODO: self is Window type
+//         &self
+//             .eval("console.log('Hello from Rust wala PLUGIN  bro!')")
+//             .unwrap();
 
-        // TODO: self is Window type
+//         // Get webview of this window
+//         // Run JS
+//         // JS: HELLO
+//         // &self.Eval("console.log('Hello from Rust!')").unwrap();
+//         // 1. check for presence of titlebar-elements via data
+//         // 2. if found, attach events
+//         // 3. if not found, create custom elements and attach events
 
-        // Get webview of this window
-        // Run JS
-        // JS:
-        // 1. check for presence of titlebar-elements via data
-        // 2. if found, attach events
-        // 3. if not found, create custom elements and attach events
+//         // Mac: set titlebar to overlay
+//         // #[cfg(target_os = "macos")]
+//         // {
+//         //     editor_win = editor_win
+//         //         .title_bar_style(tauri::TitleBarStyle::Overlay)
+//         //         .hidden_title(true);
+//         // }
 
-        // Mac: set titlebar to overlay
-        // #[cfg(target_os = "macos")]
-        // {
-        //     editor_win = editor_win
-        //         .title_bar_style(tauri::TitleBarStyle::Overlay)
-        //         .hidden_title(true);
-        // }
-
-        Ok(())
-    }
-}
+//         Ok(())
+//     }
+// }
 
 // pub trait WebviewWindowExt {
 //     fn set_decorations(&self, decorations: bool) -> Result<(), ()>;
