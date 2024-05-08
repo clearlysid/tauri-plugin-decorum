@@ -52,6 +52,12 @@ fn emulate_win_z() -> Result<(), anyhow::Error> {
 
 #[tauri::command]
 async fn show_snap_overlay() -> Result<(), String> {
+    let mut overlay = Ok(());
+
     #[cfg(target_os = "windows")]
-    emulate_win_z().map_err(|e| e.to_string())
+    {
+        overlay = emulate_win_z().map_err(|e| e.to_string());
+    }
+
+    overlay
 }
