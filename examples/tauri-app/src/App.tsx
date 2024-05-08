@@ -1,5 +1,4 @@
 import reactLogo from "./assets/react.svg";
-import "./App.css";
 import Titlebar from "./Titlebar";
 
 function App() {
@@ -22,21 +21,6 @@ function App() {
 				</a>
 			</div>
 			<p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-
-
-			<form
-				className="row"
-				onSubmit={(e) => {
-					e.preventDefault();
-				}}
-			>
-				<input
-					id="greet-input"
-					placeholder="Enter a name..."
-				/>
-				<button type="submit">Greet</button>
-			</form>
 		</div>
 	);
 }

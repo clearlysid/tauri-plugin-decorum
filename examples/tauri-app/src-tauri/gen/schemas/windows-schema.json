@@ -248,6 +248,40 @@
           ]
         },
         {
+          "type": "string",
+          "enum": [
+            "decorum:default"
+          ]
+        },
+        {
+          "description": "decorum:allow-execute -> Enables the execute command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "decorum:allow-execute"
+          ]
+        },
+        {
+          "description": "decorum:allow-ping -> Enables the ping command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "decorum:allow-ping"
+          ]
+        },
+        {
+          "description": "decorum:deny-execute -> Denies the execute command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "decorum:deny-execute"
+          ]
+        },
+        {
+          "description": "decorum:deny-ping -> Denies the ping command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "decorum:deny-ping"
+          ]
+        },
+        {
           "description": "event:default -> Default permissions for the plugin.",
           "type": "string",
           "enum": [
@@ -840,40 +874,6 @@
           "type": "string",
           "enum": [
             "resources:deny-close"
-          ]
-        },
-        {
-          "type": "string",
-          "enum": [
-            "transparent-titlebar:default"
-          ]
-        },
-        {
-          "description": "transparent-titlebar:allow-execute -> Enables the execute command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "transparent-titlebar:allow-execute"
-          ]
-        },
-        {
-          "description": "transparent-titlebar:allow-ping -> Enables the ping command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "transparent-titlebar:allow-ping"
-          ]
-        },
-        {
-          "description": "transparent-titlebar:deny-execute -> Denies the execute command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "transparent-titlebar:deny-execute"
-          ]
-        },
-        {
-          "description": "transparent-titlebar:deny-ping -> Denies the ping command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "transparent-titlebar:deny-ping"
           ]
         },
         {

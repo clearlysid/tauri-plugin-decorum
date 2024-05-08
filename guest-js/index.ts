@@ -1,5 +1,5 @@
-import { invoke } from '@tauri-apps/api/core'
+import { invoke } from "@tauri-apps/api/core";
 
 export async function execute() {
-  await invoke('plugin:transparent-titlebar|execute')
+	await invoke("plugin:decorum|execute");
 }

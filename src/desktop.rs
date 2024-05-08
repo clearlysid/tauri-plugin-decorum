@@ -4,14 +4,14 @@ use tauri::{plugin::PluginApi, AppHandle, Runtime};
 pub fn init<R: Runtime, C: DeserializeOwned>(
     app: &AppHandle<R>,
     _api: PluginApi<R, C>,
-) -> std::io::Result<TransparentTitlebar<R>> {
-    Ok(TransparentTitlebar(app.clone()))
+) -> std::io::Result<Decorum<R>> {
+    Ok(Decorum(app.clone()))
 }
 
-/// Access to the transparent-titlebar APIs.
-pub struct TransparentTitlebar<R: Runtime>(AppHandle<R>);
+/// Access to the decorum APIs.
+pub struct Decorum<R: Runtime>(AppHandle<R>);
 
-impl<R: Runtime> TransparentTitlebar<R> {
+impl<R: Runtime> Decorum<R> {
     pub fn ping(&self) -> bool {
         true
     }

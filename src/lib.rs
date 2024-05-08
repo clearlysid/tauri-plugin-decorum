@@ -9,22 +9,22 @@ mod desktop;
 mod commands;
 
 #[cfg(desktop)]
-use desktop::TransparentTitlebar;
+use desktop::Decorum;
 
-/// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the transparent-titlebar APIs.
-pub trait TransparentTitlebarExt<R: Runtime> {
-    fn transparent_titlebar(&self) -> &TransparentTitlebar<R>;
+/// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the decorum APIs.
+pub trait DecorumExt<R: Runtime> {
+    fn transparent_titlebar(&self) -> &Decorum<R>;
 }
 
-impl<R: Runtime, T: Manager<R>> crate::TransparentTitlebarExt<R> for T {
-    fn transparent_titlebar(&self) -> &TransparentTitlebar<R> {
-        self.state::<TransparentTitlebar<R>>().inner()
+impl<R: Runtime, T: Manager<R>> crate::DecorumExt<R> for T {
+    fn transparent_titlebar(&self) -> &Decorum<R> {
+        self.state::<Decorum<R>>().inner()
     }
 }
 
 /// Initializes the plugin.
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
-    Builder::new("transparent-titlebar")
+    Builder::new("decorum")
         .on_webview_ready(|webview| {
             println!("webview is ready");
             let label = webview.label();

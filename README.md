@@ -1,8 +1,8 @@
-# tauri-plugin-transparent-titlebar
+# tauri-plugin-decorum
 
 This is a plugin for Tauri (v2.0.0-beta only, atm) that provides you a transparent/overlay-style titlebar specifically on Windows. MacOS is supported natively within Tauri, but on Windows the titlebar is not that customizable.
 
-![transparent-titlebar](./wheeee.gif)
+![demo](./wheeee.gif)
 
 This plugin covers:
 

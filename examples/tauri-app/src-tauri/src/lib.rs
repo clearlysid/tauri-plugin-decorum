@@ -54,7 +54,7 @@ async fn show_snap_overlay() -> Result<(), String> {
 pub fn run() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![show_snap_overlay])
-        .plugin(tauri_plugin_transparent_titlebar::init())
+        .plugin(tauri_plugin_decorum::init())
         .setup(|app| {
             #[cfg(target_os = "windows")]
             {
