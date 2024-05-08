@@ -64,7 +64,7 @@ fn main() {
 
                 use tauri_plugin_decorum::WebviewWindowExt;
 
-                window.set_decorations2();
+                window.set_native_titlebar();
 
                 // window.set_shadow(true).expect("couldn't set shadow");
 
