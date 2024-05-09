@@ -33,17 +33,15 @@ impl<'a> WebviewWindowExt for WebviewWindow {
     }
 }
 
-// pub trait WebviewWindowBuilderExt {
-//     fn create_overlay_titlebar(self) -> Result<'WebviewWindowBuilder, Error>
-// }
+pub trait WebviewWindowBuilderExt {
+    fn create_overlay_titlebar(&self);
+}
 
-// impl<'a> WebviewWindowExt for WebviewWindowBuilder {
-//     fn create_overlay_titlebar(self) -> Result<WebviewWindowBuilder, Error> {
+impl<'WebviewWindowBuilder> dyn WebviewWindowExt {
+    fn create_overlay_titlebar(&self)   {
        
-
-//         Ok(self)
-//     }
-// }
+    }
+}
 
 // Initializes the plugin.
 // pub fn init<R: Runtime>() -> TauriPlugin<R> {
