@@ -6,17 +6,39 @@ This is a plugin for Tauri (v2.0.0-beta only, atm) that provides you a transpare
 
 This plugin covers:
 
-1. native looking controls for windows
-2. transparent titlebar
-3. windows 11 "Snap Layout" feature! -- this is the one that makes this plugin different than the others.
+1. Windows: transparent titlebar
+2. Windows: snap overlay
+3. macOS: overlay titlebar
+4. macOS: traffic light positions
 
-## How it works?
+## Usage examples
 
-1. The "transparent titlebar" is created with HTML/CSS elements
-2. Javascript connects the controls to Tauri's Maximize/Minimize/Close Window controls
-3. For the "Snap Layout" feature, we emulate a few keypresses (Win + Z, followed by Alt) to get the overlay to show.
+### Windows native titlebar
 
-Note: only windows APIs are used to make these keypresses, this plugin does NOT store any of yours or your end-users data in any way shape or form.
+```rust
+use tauri_plugin_decorum::WebviewWindowExt;
+
+let window: WebviewWindow = app.get_webview_window("main").unwrap();
+window.create_overlay_titlebar().unwrap();
+```
+
+### macOS overlay titlebar
+
+```rust
+use tauri_plugin_decorum::overlay_titlebar_mac;
+
+let mut window_builder = WebviewWindowBuilder::new(app, "test", WebviewUrl::App("/".into())).decorations(true);
+overlay_titlebar_mac(window_builder)
+```
+
+### macOS traffic light positions
+
+```rust
+use tauri_plugin_decorum::WebviewWindowExt;
+
+let window: WebviewWindow = app.get_webview_window("main").unwrap();
+window.set_traffic_light_inset((10.0, 10.0)).unwrap()
+```
 
 ## Can I use it?
 

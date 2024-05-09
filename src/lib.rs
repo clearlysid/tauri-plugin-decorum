@@ -1,5 +1,5 @@
 use anyhow::Error;
-use tauri::{WebviewWindow, WebviewWindowBuilder};
+use tauri::WebviewWindow;
 
 mod commands;
 
@@ -11,7 +11,6 @@ pub trait WebviewWindowExt {
 
 impl<'a> WebviewWindowExt for WebviewWindow {
     fn create_overlay_titlebar(self) -> Result<WebviewWindow, Error> {
-
         self.set_decorations(false)
             .expect("failed to set decorations");
 
@@ -32,33 +31,3 @@ impl<'a> WebviewWindowExt for WebviewWindow {
         Ok(self)
     }
 }
-
-pub trait WebviewWindowBuilderExt {
-    fn create_overlay_titlebar(&self);
-}
-
-impl<'WebviewWindowBuilder> dyn WebviewWindowExt {
-    fn create_overlay_titlebar(&self)   {
-       
-    }
-}
-
-// Initializes the plugin.
-// pub fn init<R: Runtime>() -> TauriPlugin<R> {
-//     Builder::new("decorum")
-//         // .on_webview_ready(|webview| {
-//         // println!("webview is ready");
-//         // let label = webview.label();
-//         // webview
-//         //     .get_webview_window(label)
-//         //     .expect("failed to get webview window");
-//         // window.set_decorations(false).unwrap();
-//         // window
-//         //     .set_title("Transparent Titlebar")
-//         //     .expect("failed to set title")
-//         //     .set_decorations(false)
-//         //     .expect("failed to set decorations");
-//         // webview.eval("console.log('Hello from Rust!')").unwrap();
-//         // })
-//         .build()
-// }
