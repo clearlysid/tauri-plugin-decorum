@@ -6,7 +6,7 @@ function App() {
 
 	return (
 		<div className="container">
-			<Titlebar />
+			{/* <Titlebar /> */}
 			<h1>Welcome to Tauri!</h1>
 
 			<div className="row">
