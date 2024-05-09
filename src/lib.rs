@@ -1,15 +1,17 @@
 use anyhow::Error;
-use tauri::WebviewWindow;
+use tauri::{WebviewWindow, WebviewWindowBuilder};
 
 mod commands;
 
 /// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the decorum APIs.
+
 pub trait WebviewWindowExt {
     fn create_overlay_titlebar(self) -> Result<WebviewWindow, Error>;
 }
 
 impl<'a> WebviewWindowExt for WebviewWindow {
     fn create_overlay_titlebar(self) -> Result<WebviewWindow, Error> {
+
         self.set_decorations(false)
             .expect("failed to set decorations");
 
@@ -17,6 +19,8 @@ impl<'a> WebviewWindowExt for WebviewWindow {
         let script = include_str!("script.js");
 
         self.eval(script).expect("couldn't run js");
+
+        // maconly methods.
 
         // The snippet checks for ab existing elment with data-tauri-decorum-tb
         // and creates a windows "default" titlebar if not found.
@@ -28,6 +32,18 @@ impl<'a> WebviewWindowExt for WebviewWindow {
         Ok(self)
     }
 }
+
+// pub trait WebviewWindowBuilderExt {
+//     fn create_overlay_titlebar(self) -> Result<'WebviewWindowBuilder, Error>
+// }
+
+// impl<'a> WebviewWindowExt for WebviewWindowBuilder {
+//     fn create_overlay_titlebar(self) -> Result<WebviewWindowBuilder, Error> {
+       
+
+//         Ok(self)
+//     }
+// }
 
 // Initializes the plugin.
 // pub fn init<R: Runtime>() -> TauriPlugin<R> {
