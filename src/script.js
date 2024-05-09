@@ -1,8 +1,7 @@
 const closeIcon = `<svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path
-d="M5 5.70801L0.854492 9.85352C0.756836 9.95117 0.639648 10 0.50293 10C0.359701 10 0.239258 9.9528 0.141602 9.8584C0.0472005 9.76074 0 9.6403 0 9.49707C0 9.36035 0.0488281 9.24316 0.146484 9.14551L4.29199 5L0.146484 0.854492C0.0488281 0.756836 0 0.638021 0 0.498047C0 0.429688 0.0130208 0.364583 0.0390625 0.302734C0.0651042 0.240885 0.100911 0.188802 0.146484 0.146484C0.192057 0.100911 0.245768 0.0651042 0.307617 0.0390625C0.369466 0.0130208 0.43457 0 0.50293 0C0.639648 0 0.756836 0.0488281 0.854492 0.146484L5 4.29199L9.14551 0.146484C9.24316 0.0488281 9.36198 0 9.50195 0C9.57031 0 9.63379 0.0130208 9.69238 0.0390625C9.75423 0.0651042 9.80794 0.100911 9.85352 0.146484C9.89909 0.192057 9.9349 0.245768 9.96094 0.307617C9.98698 0.366211 10 0.429688 10 0.498047C10 0.638021 9.95117 0.756836 9.85352 0.854492L5.70801 5L9.85352 9.14551C9.95117 9.24316 10 9.36035 10 9.49707C10 9.56543 9.98698 9.63053 9.96094 9.69238C9.9349 9.75423 9.89909 9.80794 9.85352 9.85352C9.8112 9.89909 9.75911 9.9349 9.69727 9.96094C9.63542 9.98698 9.57031 10 9.50195 10C9.36198 10 9.24316 9.95117 9.14551 9.85352L5 5.70801Z"
-fill="white" />
-</svg>`;
+<path d="M5 5.70801L0.854492 9.85352C0.756836 9.95117 0.639648 10 0.50293 10C0.359701 10 0.239258 9.9528 0.141602 9.8584C0.0472005 9.76074 0 9.6403 0 9.49707C0 9.36035 0.0488281 9.24316 0.146484 9.14551L4.29199 5L0.146484 0.854492C0.0488281 0.756836 0 0.638021 0 0.498047C0 0.429688 0.0130208 0.364583 0.0390625 0.302734C0.0651042 0.240885 0.100911 0.188802 0.146484 0.146484C0.192057 0.100911 0.245768 0.0651042 0.307617 0.0390625C0.369466 0.0130208 0.43457 0 0.50293 0C0.639648 0 0.756836 0.0488281 0.854492 0.146484L5 4.29199L9.14551 0.146484C9.24316 0.0488281 9.36198 0 9.50195 0C9.57031 0 9.63379 0.0130208 9.69238 0.0390625C9.75423 0.0651042 9.80794 0.100911 9.85352 0.146484C9.89909 0.192057 9.9349 0.245768 9.96094 0.307617C9.98698 0.366211 10 0.429688 10 0.498047C10 0.638021 9.95117 0.756836 9.85352 0.854492L5.70801 5L9.85352 9.14551C9.95117 9.24316 10 9.36035 10 9.49707C10 9.56543 9.98698 9.63053 9.96094 9.69238C9.9349 9.75423 9.89909 9.80794 9.85352 9.85352C9.8112 9.89909 9.75911 9.9349 9.69727 9.96094C9.63542 9.98698 9.57031 10 9.50195 10C9.36198 10 9.24316 9.95117 9.14551 9.85352L5 5.70801Z" fill="white"/>
+</svg>
+`;
 
 
 const maximizeIcon = `<svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -15,75 +14,76 @@ const minimizeIcon = `<svg width="10" height="1" viewBox="0 0 10 1" fill="none" 
 <path
 d="M0.498047 1C0.429688 1 0.364583 0.986979 0.302734 0.960938C0.244141 0.934896 0.192057 0.899089 0.146484 0.853516C0.100911 0.807943 0.0651042 0.755859 0.0390625 0.697266C0.0130208 0.635417 0 0.570312 0 0.501953C0 0.433594 0.0130208 0.370117 0.0390625 0.311523C0.0651042 0.249674 0.100911 0.195964 0.146484 0.150391C0.192057 0.101562 0.244141 0.0641276 0.302734 0.0380859C0.364583 0.0120443 0.429688 -0.000976562 0.498047 -0.000976562H9.50195C9.57031 -0.000976562 9.63379 0.0120443 9.69238 0.0380859C9.75423 0.0641276 9.80794 0.101562 9.85352 0.150391C9.89909 0.195964 9.9349 0.249674 9.96094 0.311523C9.98698 0.370117 10 0.433594 10 0.501953C10 0.570312 9.98698 0.635417 9.96094 0.697266C9.9349 0.755859 9.89909 0.807943 9.85352 0.853516C9.80794 0.899089 9.75423 0.934896 9.69238 0.960938C9.63379 0.986979 9.57031 1 9.50195 1H0.498047Z"
 fill="white" />
-</svg>	`
+</svg>`
 
+window.onload = () => {
+	let tbEl = document.querySelector('[data-tauri-decorum-tb]');
 
-let tbEl = document.querySelector('[data-tauri-decorum-tb]');
+	if (!tbEl) {
+		// Create titlebar element
+		tbEl = document.createElement('div');
+		tbEl.setAttribute('data-tauri-decorum-tb', '');
+		tbEl.style.top = 0;
+		tbEl.style.left = 0;
+		tbEl.style.zIndex = 100;
+		tbEl.style.width = '100%';
+		tbEl.style.height = '32px';
+		tbEl.style.display = 'flex';
+		tbEl.style.position = 'fixed';
+		tbEl.style.alignItems = 'end';
+		tbEl.style.justifyContent = 'end';
+		tbEl.style.backgroundColor = 'transparent';
 
-if (!tbEl) {
-	// Create titlebar element
-	tbEl = document.createElement('div');
-	tbEl.setAttribute('data-tauri-decorum-tb', '');
-	tbEl.style.top = 0;
-	tbEl.style.left = 0;
-	tbEl.style.zIndex = 100;
-	tbEl.style.width = '100%';
-	tbEl.style.height = '32px';
-	tbEl.style.display = 'flex';
-	tbEl.style.position = 'fixed';
-	tbEl.style.alignItems = 'end';
-	tbEl.style.justifyContent = 'end';
-	tbEl.style.backgroundColor = 'transparent';
+		// Create draggable area
+		const drag = document.createElement('div');
+		drag.style.width = '100%';
+		drag.style.height = '100%';
+		drag.style.background = 'transparent'
+		drag.setAttribute('data-tauri-drag-region', '');
+		tbEl.appendChild(drag);
 
-	// Create draggable area
-	const drag = document.createElement('div');
-	drag.style.width = '100%';
-	drag.style.height = '100%';
-	drag.style.background = 'transparent'
-	drag.setAttribute('data-tauri-drag-region', '');
-	tbEl.appendChild(drag);
+		// Create button func
+		const createButton = (id) => {
+			const btn = document.createElement('button');
+			btn.id = "decorum-tb-" + id;
+			btn.style.width = 'fit-content';
+			btn.style.height = '32px';
+			btn.style.border = 'none';
+			btn.style.outline = 'none';
+			btn.style.display = 'flex';
+			btn.style.boxShadow = 'none';
+			btn.style.borderRadius = '0';
+			btn.style.alignItems = 'center';
+			btn.style.justifyContent = 'center';
+			btn.style.backgroundColor = 'transparent';
 
-	// Create button func
-	const createButton = (id) => {
-		const btn = document.createElement('button');
-		btn.id = "decorum-tb-" + id;
-		btn.style.width = '46px';
-		btn.style.height = '32px';
-		btn.style.border = 'none';
-		btn.style.outline = 'none';
-		btn.style.display = 'flex';
-		btn.style.boxShadow = 'none';
-		btn.style.borderRadius = '0';
-		btn.style.alignItems = 'center';
-		btn.style.justifyContent = 'center';
-		btn.style.backgroundColor = 'transparent';
+			switch (id) {
+				case 'minimize':
+					btn.innerHTML = minimizeIcon
+					break;
+				case 'maximize':
+					btn.innerHTML = maximizeIcon
+					break;
+				case 'close':
+					btn.innerHTML = closeIcon
+					break;
+			}
 
-		switch (id) {
-			case 'minimize':
-				btn.innerHTML = minimizeIcon
-				break;
-			case 'maximize':
-				btn.innerHTML = maximizeIcon
-				break;
-			case 'close':
-				btn.innerHTML = closeIcon
-				break;
+			btn.addEventListener('click', () => {
+				console.log('button clicked', id);
+			});
+			tbEl.appendChild(btn);
 		}
 
-		btn.addEventListener('click', () => {
-			console.log('button clicked', id);
-		});
-		tbEl.appendChild(btn);
-	}
+		createButton('minimize');
+		createButton('maximize');
+		createButton('close');
 
-	createButton('minimize');
-	createButton('maximize');
-	createButton('close');
+		// add hover styles
+		const style = document.createElement('style');
+		document.head.appendChild(style);
 
-	// add hover styles
-	const style = document.createElement('style');
-	document.head.appendChild(style);
-	style.innerHTML = `
+		style.innerHTML = `
 		#decorum-tb-minimize, #decorum-tb-maximize, #decorum-tb-close {
 			transition: background 0.1s;
 		}
@@ -94,8 +94,15 @@ if (!tbEl) {
 		#decorum-tb-close:hover {
 			background: rgba(255,0,0,0.7) !important;
 		}
+
+		#decorum-tb-minimize svg,
+		#decorum-tb-maximize svg,
+		#decorum-tb-close svg {
+			width: auto;
+		}
 	`;
 
-	// finally add finished tbEl to the body
-	document.body.appendChild(tbEl);
+		// finally add finished tbEl to the body
+		document.body.appendChild(tbEl);
+	}
 }
