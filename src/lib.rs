@@ -17,6 +17,14 @@ impl<'a> WebviewWindowExt for WebviewWindow {
         let script = include_str!("script.js");
 
         self.eval(script).expect("couldn't run js");
+
+        // The snippet checks for ab existing elment with data-tauri-decorum-tb
+        // and creates a windows "default" titlebar if not found.
+
+        // TODO: attach window control events to the buttons
+        // TODO: ensure this script is re-run on reload
+        // currently it will disappear if one reloads the page
+
         Ok(self)
     }
 }
