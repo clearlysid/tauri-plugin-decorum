@@ -7,6 +7,7 @@ mod commands;
 
 pub trait WebviewWindowExt {
     fn create_overlay_titlebar(self) -> Result<WebviewWindow, Error>;
+    fn set_traffic_light_inset(self, x: f32, y: f32) -> Result<WebviewWindow, Error>;
 }
 
 impl<'a> WebviewWindowExt for WebviewWindow {
@@ -19,14 +20,17 @@ impl<'a> WebviewWindowExt for WebviewWindow {
 
         self.eval(script).expect("couldn't run js");
 
-        // maconly methods.
-
         // The snippet checks for ab existing elment with data-tauri-decorum-tb
         // and creates a windows "default" titlebar if not found.
 
         // TODO: attach window control events to the buttons
         // TODO: ensure this script is re-run on reload
         // currently it will disappear if one reloads the page
+
+        Ok(self)
+    }
+    fn set_traffic_light_inset(self, x: f32, y: f32) -> Result<WebviewWindow, Error> {
+        let ns_window = self.ns_window().expect("couldn't get ns_window");
 
         Ok(self)
     }
