@@ -8,9 +8,6 @@ mod desktop;
 
 mod commands;
 
-#[cfg(desktop)]
-use desktop::Decorum;
-
 /// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the decorum APIs.
 
 pub fn caller(win: &WebviewWindow) {
