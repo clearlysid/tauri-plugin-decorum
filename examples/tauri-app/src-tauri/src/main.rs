@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use tauri::Manager;
+use tauri_plugin_decorum::WebviewWindowExt;
 
 fn emulate_win_z() -> Result<(), anyhow::Error> {
     #[cfg(target_os = "windows")]
@@ -60,19 +61,9 @@ async fn show_snap_overlay() -> Result<(), String> {
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![show_snap_overlay])
-        .plugin(tauri_plugin_decorum::init())
         .setup(|app| {
-            #[cfg(target_os = "windows")]
-            {
-                let window = app.get_webview_window("main").unwrap();
-
-                use tauri_plugin_decorum::Foo;
-                window.foo();
-                // tauri_plugin_decorum::caller(&window);
-                // window
-                //     .eval("console.log('Hello from Rust wala app bro!')")
-                //     .unwrap();
-            }
+            let window = app.get_webview_window("main").unwrap();
+            window.create_overlay_titlebar().unwrap();
             Ok(())
         })
         .run(tauri::generate_context!())
