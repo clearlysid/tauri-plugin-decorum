@@ -1,5 +1,9 @@
 use anyhow::Error;
 use tauri::WebviewWindow;
+use tauri::{
+    plugin::{Builder, TauriPlugin},
+    Manager, Runtime,
+  };
 
 mod commands;
 
@@ -45,3 +49,19 @@ impl<'a> WebviewWindowExt for WebviewWindow {
         Ok(self)
     }
 }
+
+// init the plugin, and also handle the onload maybe???
+pub fn init<R: Runtime>() -> TauriPlugin<R> {
+    Builder::new("decorum")
+    //   .invoke_handler(tauri::generate_handler![commands::execute])
+      .on_page_load(|window, _payload| {
+        window.eval("console.warn('RELOAD kyu kiya bkl')").unwrap();
+        // TODO: self will be window here i think
+        //self.set_decorations(false)
+        // .expect("failed to set decorations");
+        let script = include_str!("script.js");
+        window.eval(script).expect("couldn't run js");
+      })
+      .build()
+  }
+  

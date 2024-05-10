@@ -63,9 +63,7 @@ async fn show_snap_overlay() -> Result<(), String> {
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![show_snap_overlay])
-        .on_page_load(|window, _payload| {
-            window.eval("console.warn('RELOAD kyu kiya bkl')").unwrap();
-          })
+        .plugin(tauri_plugin_decorum::init())
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();
             window.create_overlay_titlebar().unwrap();
