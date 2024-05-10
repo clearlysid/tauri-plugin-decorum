@@ -16,6 +16,14 @@ d="M0.498047 1C0.429688 1 0.364583 0.986979 0.302734 0.960938C0.244141 0.934896 
 fill="white" />
 </svg>`
 
+const pageAccessedByReload = (
+	(window.performance.navigation && window.performance.navigation.type === 1) ||
+	  window.performance
+		.getEntriesByType('navigation')
+		.map((nav) => nav.type)
+		.includes('reload')
+);
+
 window.onload = () => {
 	let tbEl = document.querySelector('[data-tauri-decorum-tb]');
 
