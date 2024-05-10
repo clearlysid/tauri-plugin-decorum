@@ -24,6 +24,10 @@ const pageAccessedByReload = (
 		.includes('reload')
 );
 
+pageAccessedByReload ? console.log("I'm aware of the reload i underwent") : console.log("kya hua BC");
+
+// okay, so this line above could also be leveraged to prevent the re render. worth a while to find 
+
 window.onload = () => {
 	let tbEl = document.querySelector('[data-tauri-decorum-tb]');
 
