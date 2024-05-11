@@ -8,40 +8,31 @@ use tauri::{
 mod commands;
 
 /// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the decorum APIs.
-#[cfg(target_os = "windows")]
 pub trait WebviewWindowExt {
+    #[cfg(target_os = "windows")]
     fn create_overlay_titlebar(self) -> Result<WebviewWindow, Error>;
-}
-
-#[cfg(target_os = "macos")]
-pub trait WebviewWindowExt {
+    #[cfg(target_os = "macos")]
     fn set_traffic_light_inset(self, x: f32, y: f32) -> Result<WebviewWindow, Error>;
 }
 
-#[cfg(target_os = "windows")]
 impl<'a> WebviewWindowExt for WebviewWindow {
+    #[cfg(target_os = "windows")]
     fn create_overlay_titlebar(self) -> Result<WebviewWindow, Error> {
         self.set_decorations(false)
             .expect("failed to set decorations");
 
         // get the file script.js as a string
-        let script = include_str!("script.js");
-
-        self.eval(script).expect("couldn't run js");
-
         // The snippet checks for ab existing elment with data-tauri-decorum-tb
         // and creates a windows "default" titlebar if not found.
+        let script = include_str!("script.js");
+        self.eval(script).expect("couldn't run js");
 
-        // TODO: attach window control events to the buttons
         // TODO: ensure this script is re-run on reload
-        // currently it will disappear if one reloads the page
 
         Ok(self)
     }
-}
 
-#[cfg(target_os = "macos")]
-impl<'a> WebviewWindowExt for WebviewWindow {
+    #[cfg(target_os = "macos")]
     fn set_traffic_light_inset(self, x: f32, y: f32) -> Result<WebviewWindow, Error> {
         let ns_window = self.ns_window().expect("couldn't get ns_window");
 
@@ -55,9 +46,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
         .invoke_handler(tauri::generate_handler![commands::show_snap_overlay])
         .on_page_load(|window, _payload| {
             // window.eval("console.warn('RELOAD kyu kiya bkl')").unwrap();
-            // TODO: self will be window here i think
-            //self.set_decorations(false)
-            // .expect("failed to set decorations");
+
             let script = include_str!("script.js");
             window.eval(script).expect("couldn't run js");
         })
