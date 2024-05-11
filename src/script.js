@@ -16,22 +16,35 @@ d="M0.498047 1C0.429688 1 0.364583 0.986979 0.302734 0.960938C0.244141 0.934896 
 fill="white" />
 </svg>`
 
-const pageAccessedByReload = (
-	(window.performance.navigation && window.performance.navigation.type === 1) ||
-	  window.performance
-		.getEntriesByType('navigation')
-		.map((nav) => nav.type)
-		.includes('reload')
-);
+// const pageAccessedByReload = (
+// 	(window.performance.navigation && window.performance.navigation.type === 1) ||
+// 	window.performance
+// 		.getEntriesByType('navigation')
+// 		.map((nav) => nav.type)
+// 		.includes('reload')
+// );
 
-pageAccessedByReload ? console.log("I'm aware of the reload i underwent") : console.log("kya hua BC");
+// pageAccessedByReload ? console.log("I'm aware of the reload i underwent") : console.log("kya hua BC");
 
 // okay, so this line above could also be leveraged to prevent the re render. worth a while to find 
 
-window.onload = () => {
+document.addEventListener('DOMContentLoaded', () => {
+	const tauri = window.__TAURI__;
+
+	if (!tauri) {
+		console.log("DECORUM: Tauri API not found. Exiting.")
+		console.log("DECORUM: Set withGlobalTauri to true in tauri.conf.json to enable Tauri API.")
+		return
+	}
+
+	const win = tauri.window.getCurrent();
+
 	let tbEl = document.querySelector('[data-tauri-decorum-tb]');
 
 	if (!tbEl) {
+
+		console.log("DECORUM: Element with data-tauri-decorum-tb not found. Creating one.")
+
 		// Create titlebar element
 		tbEl = document.createElement('div');
 		tbEl.setAttribute('data-tauri-decorum-tb', '');
@@ -58,7 +71,8 @@ window.onload = () => {
 		const createButton = (id) => {
 			const btn = document.createElement('button');
 			btn.id = "decorum-tb-" + id;
-			btn.style.width = 'fit-content';
+			btn.style.padding = '0';
+			btn.style.width = '58px';
 			btn.style.height = '32px';
 			btn.style.border = 'none';
 			btn.style.outline = 'none';
@@ -69,27 +83,40 @@ window.onload = () => {
 			btn.style.justifyContent = 'center';
 			btn.style.backgroundColor = 'transparent';
 
+			let timer;
+
+			const show_snap_overlay = () => {
+				console.log("show_snap_overlay")
+				// invoke("show_snap_overlay");
+			}
+
 			switch (id) {
 				case 'minimize':
 					btn.innerHTML = minimizeIcon
+					btn.addEventListener('click', () => win.minimize());
+					btn.addEventListener('mouseleave', () => clearTimeout(timer));
+					btn.addEventListener('mouseenter', () => {
+						timer = setTimeout(show_snap_overlay, 600);
+					});
 					break;
 				case 'maximize':
 					btn.innerHTML = maximizeIcon
+					btn.addEventListener('click', () => win.maximize());
+					btn.addEventListener('mouseleave', () => clearTimeout(timer));
+					btn.addEventListener('mouseenter', () => {
+						timer = setTimeout(show_snap_overlay, 600);
+					});
 					break;
 				case 'close':
 					btn.innerHTML = closeIcon
+					btn.addEventListener('click', () => win.close());
 					break;
 			}
 
-			btn.addEventListener('click', () => {
-				console.log('button clicked', id);
-			});
 			tbEl.appendChild(btn);
 		}
 
-		createButton('minimize');
-		createButton('maximize');
-		createButton('close');
+		['minimize', 'maximize', 'close'].forEach(createButton);
 
 		// add hover styles
 		const style = document.createElement('style');
@@ -117,4 +144,4 @@ window.onload = () => {
 		// finally add finished tbEl to the body
 		document.body.appendChild(tbEl);
 	}
-}
+});
