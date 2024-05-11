@@ -68,17 +68,16 @@ fn main() {
             let window = app.get_webview_window("main").unwrap();
             window.create_overlay_titlebar().unwrap();
 
-            let mut test_win = WebviewWindowBuilder::new(app, "test", WebviewUrl::App("/".into()))
-                .decorations(true);
-
             #[cfg(target_os = "macos")]
             {
+                let mut test_win =
+                    WebviewWindowBuilder::new(app, "test", WebviewUrl::App("/".into()))
+                        .decorations(true);
                 test_win = test_win
                     .title_bar_style(tauri::TitleBarStyle::Overlay)
                     .hidden_title(true);
+                let test_win = test_win.build().expect("Failed to build test window");
             }
-
-            let test_win = test_win.build().expect("Failed to build test window");
 
             Ok(())
         })
