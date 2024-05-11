@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	}
 
 	const win = tauri.window.getCurrent();
+	const invoke = tauri.core.invoke;
 
 	let tbEl = document.querySelector('[data-tauri-decorum-tb]');
 
@@ -85,10 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 			let timer;
 
-			const show_snap_overlay = () => {
-				console.log("show_snap_overlay")
-				// invoke("show_snap_overlay");
-			}
+			const show_snap_overlay = () => invoke('plugin:decorum|show_snap_overlay');
 
 			switch (id) {
 				case 'minimize':

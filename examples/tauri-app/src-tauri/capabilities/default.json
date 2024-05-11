@@ -19,6 +19,7 @@
 		"window:allow-minimize",
 		"window:allow-maximize",
 		"window:allow-center",
-		"window:allow-set-size"
+		"window:allow-set-size",
+		"decorum:allow-show-snap-overlay"
 	]
 }

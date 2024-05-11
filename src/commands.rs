@@ -1,13 +1,11 @@
 use tauri;
 
 #[cfg(target_os = "windows")]
-use windows::Win32::UI::Input::KeyboardAndMouse::{
-    SendInput, INPUT, INPUT_KEYBOARD, KEYBD_EVENT_FLAGS, KEYEVENTF_KEYUP, VIRTUAL_KEY, VK_MENU,
-    VK_RWIN,
-};
-
-#[cfg(target_os = "windows")]
 fn emulate_win_z() -> Result<(), anyhow::Error> {
+    use windows::Win32::UI::Input::KeyboardAndMouse::{
+        SendInput, INPUT, INPUT_KEYBOARD, KEYBD_EVENT_FLAGS, KEYEVENTF_KEYUP, VIRTUAL_KEY, VK_MENU,
+        VK_RWIN,
+    };
     // Press Win + Z
     unsafe {
         let mut inputs: [INPUT; 4] = std::mem::zeroed();
@@ -51,13 +49,10 @@ fn emulate_win_z() -> Result<(), anyhow::Error> {
 }
 
 #[tauri::command]
-async fn show_snap_overlay() -> Result<(), String> {
-    let mut overlay = Ok(());
+pub async fn show_snap_overlay() -> Result<(), String> {
+    #[cfg(not(target_os = "windows"))]
+    return Ok(());
 
     #[cfg(target_os = "windows")]
-    {
-        overlay = emulate_win_z().map_err(|e| e.to_string());
-    }
-
-    overlay
+    emulate_win_z().map_err(|e| e.to_string())
 }

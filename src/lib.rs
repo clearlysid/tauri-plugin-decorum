@@ -3,7 +3,7 @@ use tauri::WebviewWindow;
 use tauri::{
     plugin::{Builder, TauriPlugin},
     Manager, Runtime,
-  };
+};
 
 mod commands;
 
@@ -13,7 +13,7 @@ pub trait WebviewWindowExt {
     fn create_overlay_titlebar(self) -> Result<WebviewWindow, Error>;
 }
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "macos")]
 pub trait WebviewWindowExt {
     fn set_traffic_light_inset(self, x: f32, y: f32) -> Result<WebviewWindow, Error>;
 }
@@ -38,10 +38,9 @@ impl<'a> WebviewWindowExt for WebviewWindow {
 
         Ok(self)
     }
-
 }
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "macos")]
 impl<'a> WebviewWindowExt for WebviewWindow {
     fn set_traffic_light_inset(self, x: f32, y: f32) -> Result<WebviewWindow, Error> {
         let ns_window = self.ns_window().expect("couldn't get ns_window");
@@ -53,15 +52,14 @@ impl<'a> WebviewWindowExt for WebviewWindow {
 // init the plugin, and also handle the onload maybe???
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("decorum")
-    //   .invoke_handler(tauri::generate_handler![commands::execute])
-      .on_page_load(|window, _payload| {
-        window.eval("console.warn('RELOAD kyu kiya bkl')").unwrap();
-        // TODO: self will be window here i think
-        //self.set_decorations(false)
-        // .expect("failed to set decorations");
-        let script = include_str!("script.js");
-        window.eval(script).expect("couldn't run js");
-      })
-      .build()
-  }
-  
+        .invoke_handler(tauri::generate_handler![commands::show_snap_overlay])
+        .on_page_load(|window, _payload| {
+            // window.eval("console.warn('RELOAD kyu kiya bkl')").unwrap();
+            // TODO: self will be window here i think
+            //self.set_decorations(false)
+            // .expect("failed to set decorations");
+            let script = include_str!("script.js");
+            window.eval(script).expect("couldn't run js");
+        })
+        .build()
+}
