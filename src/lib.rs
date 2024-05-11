@@ -2,7 +2,7 @@ use anyhow::Error;
 use tauri::WebviewWindow;
 use tauri::{
     plugin::{Builder, TauriPlugin},
-    Manager, Runtime,
+    Runtime,
 };
 
 mod commands;
