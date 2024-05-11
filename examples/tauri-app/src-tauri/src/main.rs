@@ -11,7 +11,7 @@ fn main() {
         .plugin(tauri_plugin_decorum::init())
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();
-            window.create_overlay_titlebar().unwrap();
+            window.create_overlay_titlebar().unwrap().show().unwrap();
 
             #[cfg(target_os = "macos")]
             {
