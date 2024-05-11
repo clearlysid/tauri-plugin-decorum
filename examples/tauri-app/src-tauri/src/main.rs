@@ -10,8 +10,20 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_decorum::init())
         .setup(|app| {
+            use tauri::window::{Color, Effect, EffectState};
+
             let window = app.get_webview_window("main").unwrap();
-            window.create_overlay_titlebar().unwrap().show().unwrap();
+            window
+                .clone()
+                .create_overlay_titlebar()
+                .unwrap()
+                .show()
+                .unwrap();
+            window.set_effects(
+                tauri::window::EffectsBuilder::new()
+                    .effect(Effect::Tabbed)
+                    .build(),
+            );
 
             #[cfg(target_os = "macos")]
             {
