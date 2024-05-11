@@ -19,22 +19,17 @@ fn main() {
                 .unwrap()
                 .show()
                 .unwrap();
-            window.set_effects(
-                tauri::window::EffectsBuilder::new()
-                    .effect(Effect::Tabbed)
-                    .build(),
-            );
 
-            #[cfg(target_os = "macos")]
-            {
-                let mut test_win =
-                    WebviewWindowBuilder::new(app, "test", WebviewUrl::App("/".into()))
-                        .decorations(true);
-                test_win = test_win
-                    .title_bar_style(tauri::TitleBarStyle::Overlay)
-                    .hidden_title(true);
-                let test_win = test_win.build().expect("Failed to build test window");
-            }
+            // #[cfg(target_os = "macos")]
+            // {
+            //     let mut test_win =
+            //         WebviewWindowBuilder::new(app, "test", WebviewUrl::App("/".into()))
+            //             .decorations(true);
+            //     test_win = test_win
+            //         .title_bar_style(tauri::TitleBarStyle::Overlay)
+            //         .hidden_title(true);
+            //     let test_win = test_win.build().expect("Failed to build test window");
+            // }
 
             Ok(())
         })
