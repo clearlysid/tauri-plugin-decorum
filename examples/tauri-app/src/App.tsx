@@ -1,9 +1,6 @@
-// import Titlebar from "./Titlebar";
-
 function App() {
 	return (
 		<div className="container">
-			{/* <Titlebar /> */}
 			<h1>Welcome to Tauri!</h1>
 
 			<div className="row">
