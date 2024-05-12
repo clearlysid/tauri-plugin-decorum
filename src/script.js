@@ -1,10 +1,11 @@
+
 document.addEventListener("DOMContentLoaded", () => {
   const tauri = window.__TAURI__;
 
   if (!tauri) {
     console.log("DECORUM: Tauri API not found. Exiting.");
     console.log(
-      "DECORUM: Set withGlobalTauri to true in tauri.conf.json to enable Tauri API.",
+      "DECORUM: Set withGlobalTauri: true in tauri.conf.json to enable.",
     );
     return;
   }
@@ -46,20 +47,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const btn = document.createElement("button");
       btn.id = "decorum-tb-" + id;
       btn.classList.add("decorum-tb-btn")
-      btn.style.padding = "0";
-      btn.style.width = "58px";
-      btn.style.height = "32px";
-      btn.style.border = "none";
-      btn.style.outline = "none";
-      btn.style.display = "flex";
-      btn.style.boxShadow = "none";
-      btn.style.borderRadius = "0";
-      btn.style.alignItems = "center";
-      btn.style.justifyContent = "center";
-      btn.style.backgroundColor = "transparent";
 
       let timer;
-
       const show_snap_overlay = () =>
         invoke("plugin:decorum|show_snap_overlay");
 
@@ -69,16 +58,15 @@ document.addEventListener("DOMContentLoaded", () => {
           btn.addEventListener("click", () => win.minimize());
           btn.addEventListener("mouseleave", () => clearTimeout(timer));
           btn.addEventListener("mouseenter", () => {
-            timer = setTimeout(show_snap_overlay, 600);
+            timer = setTimeout(show_snap_overlay, 500);
           });
           break;
         case "maximize":
           btn.innerHTML = "\uE922";
-          btn.innerHTML = "\uE923";
           btn.addEventListener("click", () => win.maximize());
           btn.addEventListener("mouseleave", () => clearTimeout(timer));
           btn.addEventListener("mouseenter", () => {
-            timer = setTimeout(show_snap_overlay, 600);
+            timer = setTimeout(show_snap_overlay, 500);
           });
           break;
         case "close":
@@ -92,26 +80,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
     ["minimize", "maximize", "close"].forEach(createButton);
 
-    // add hover styles
     const style = document.createElement("style");
     document.head.appendChild(style);
 
     style.innerHTML = `
 		.decorum-tb-btn {
+      width: 58px;
+      height: 32px;
+      border: none;
+      padding: 0px;
+      outline: none;
+      display: flex;
       font-size: 10px;
       font-weight: 300;
-      font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets';
+      box-shadow: none;
+      border-radius: 0;
+      align-items: center;
+      justify-content: center;
 			transition: background 0.1s;
+      background-color: transparent;
       text-rendering: optimizeLegibility;
       -webkit-font-smoothing: antialiased;
+      font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets';
 		}
 
-		#decorum-tb-minimize:hover, #decorum-tb-maximize:hover {
-			background: rgba(0,0,0,0.2) !important;
+		.decorum-tb-btn:hover {
+			background-color: rgba(0,0,0,0.2);
 		}
 
 		#decorum-tb-close:hover {
-			background: rgba(255,0,0,0.7) !important;
+			background-color: rgba(255,0,0,0.7) !important;
 		}
 	`;
 
