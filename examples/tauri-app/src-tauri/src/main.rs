@@ -3,7 +3,6 @@
 
 use tauri::Manager;
 use tauri::WebviewUrl;
-use tauri::WebviewWindowBuilder;
 use tauri_plugin_decorum::WebviewWindowExt;
 
 fn main() {

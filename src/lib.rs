@@ -25,11 +25,16 @@ impl<'a> WebviewWindowExt for WebviewWindow {
         self.listen("decorum-page-load", move |_| {
             // println!("decorum-page-load event received")
 
-            // get the file script.js as a string
-            let script = include_str!("script.js");
-            win2.eval(script).expect("couldn't run js");
-            // The snippet checks for an existing elment with data-tauri-decorum-tb
-            // and creates a windows "default" titlebar if not found.
+            // Create a transparent draggable area for the titlebar
+            let script_tb = include_str!("js/titlebar.js");
+            win2.eval(script_tb).expect("couldn't run js");
+
+            // On Windows, create custom window controls
+            #[cfg(target_os = "windows")]
+            {
+                let script_controls = include_str!("js/controls.js");
+                win2.eval(script_controls).expect("couldn't run js");
+            }
         });
 
         Ok(self)
@@ -37,7 +42,10 @@ impl<'a> WebviewWindowExt for WebviewWindow {
 
     #[cfg(target_os = "macos")]
     fn set_traffic_lights_inset(&self, x: f32, y: f32) -> Result<&WebviewWindow, Error> {
+        println!("set_traffic_lights_inset to x: {}, y: {}", x, y);
         let ns_window = self.ns_window().expect("couldn't get ns_window");
+
+        // TODO: add the code to set traffic lights position here
 
         Ok(self)
     }
