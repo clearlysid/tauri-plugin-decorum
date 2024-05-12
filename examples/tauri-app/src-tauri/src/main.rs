@@ -10,26 +10,14 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_decorum::init())
         .setup(|app| {
-            use tauri::window::{Color, Effect, EffectState};
+            // Create a custom titlebar for main window
+            // On Windows this will hide decoration and render custom window controls
+            // On macOS it expects a hiddenTitle: true and titleBarStyle: overlay
+            let main_window = app.get_webview_window("main").unwrap();
+            main_window.create_overlay_titlebar().unwrap();
 
-            let window = app.get_webview_window("main").unwrap();
-            window
-                .clone()
-                .create_overlay_titlebar()
-                .unwrap()
-                .show()
-                .unwrap();
-
-            // #[cfg(target_os = "macos")]
-            // {
-            //     let mut test_win =
-            //         WebviewWindowBuilder::new(app, "test", WebviewUrl::App("/".into()))
-            //             .decorations(true);
-            //     test_win = test_win
-            //         .title_bar_style(tauri::TitleBarStyle::Overlay)
-            //         .hidden_title(true);
-            //     let test_win = test_win.build().expect("Failed to build test window");
-            // }
+            #[cfg(target_os = "macos")]
+            main_window.set_traffic_lights_inset(8.0, 8.0).unwrap();
 
             Ok(())
         })
