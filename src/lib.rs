@@ -1,11 +1,17 @@
 use anyhow::Error;
 use tauri::{
     plugin::{Builder, TauriPlugin},
-    Runtime,
+    Manager, Runtime, WebviewWindow,
 };
-use tauri::{Manager, WebviewWindow};
+
+#[cfg(target_os = "macos")]
+mod traffic;
 
 mod commands;
+
+#[cfg(target_os = "macos")]
+#[macro_use]
+extern crate objc;
 
 /// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the decorum APIs.
 pub trait WebviewWindowExt {
@@ -42,10 +48,10 @@ impl<'a> WebviewWindowExt for WebviewWindow {
 
     #[cfg(target_os = "macos")]
     fn set_traffic_lights_inset(&self, x: f32, y: f32) -> Result<&WebviewWindow, Error> {
-        println!("set_traffic_lights_inset to x: {}, y: {}", x, y);
         let ns_window = self.ns_window().expect("couldn't get ns_window");
+        let ns_window_handle = traffic::UnsafeWindowHandle(ns_window);
 
-        // TODO: add the code to set traffic lights position here
+        traffic::position_traffic_lights(ns_window_handle, x.into(), y.into());
 
         Ok(self)
     }
@@ -58,6 +64,11 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             window
                 .emit("decorum-page-load", ())
                 .expect("couldn't fire decorum-page-load event");
+        })
+        .on_window_ready(|window| {
+            #[cfg(target_os = "macos")]
+            traffic::setup_traffic_light_positioner(window);
+            return;
         })
         .build()
 }

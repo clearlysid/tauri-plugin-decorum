@@ -14,6 +14,11 @@ serde = "1.0"
 thiserror = "1.0"
 anyhow = "1.0.83"
 
+[target.'cfg(target_os = "macos")'.dependencies]
+rand = "0.8.5"
+cocoa = "0.25.0"
+objc = "0.2.7"
+
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = "0.56.0"
 
