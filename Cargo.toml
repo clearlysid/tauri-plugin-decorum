@@ -7,6 +7,9 @@ edition = "2021"
 rust-version = "1.70"
 exclude = ["/examples", "/webview-dist", "/webview-src", "/node_modules"]
 links = "tauri-plugin-decorum"
+license = "MIT"
+homepage = "https://github.com/clearlysid/tauri-plugin-decorum"
+repository = "https://github.com/clearlysid/tauri-plugin-decorum"
 
 [dependencies]
 tauri = { version = "2.0.0-beta.17" }
