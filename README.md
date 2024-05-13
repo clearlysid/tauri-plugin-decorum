@@ -7,7 +7,10 @@ A Tauri plugin (v2.0 only for now) that gives you convenient ways to:
 
 ![demo](./wheeee.gif)
 
-Being a designer, I'm _very_ particular about how window decorations look and behave. This plugin is an opinionated take on titlebars: it retains the native featuress (like Windows Snap Layout) and uses transparency to seamlessly sit within your app's UI solving my two gripes with the default titlebars. One, they feel too "disconnected" from the rest of the app and two, they window controls often aren't aligned well with the rest of the contents.
+Being a designer, I'm _very_ particular about window decorations. This plugin is an opinionated take on titlebars and solves my three gripes with the default ones:
+1. it retains most native features (like Windows Snap Layout)
+2. they doesn't feel _disconnected_ from the rest of your app and uses transparency to blend in
+3. they window controls often aren't aligned well with the rest of the contents
 
 ## Installation and Usage
 
@@ -52,12 +55,12 @@ You'll also need to set these permissions for your window in `src-tauri/capabili
 "window:allow-minimize",
 "window:allow-maximize",
 "window:allow-set-size",
-"window:allow-set-focus"
+"window:allow-set-focus",
 "window:allow-start-dragging",
-"decorum:allow-show-snap-overlay"
+"decorum:allow-show-snap-overlay",
 ```
 
-*I'm sure there's a better way to handle permissions from the plugin itself but haven't yet found it. Please create an issue/PR with more details if you know this.
+*there's likely a better way to handle plugin permissions that I haven't found, please let me know if you have!
 
 
 ## Development Guide
@@ -70,6 +73,6 @@ PRs and issues welcome! Here's a short primer to get you started with developmen
 ## Roadmap
 
 It's still early days and there's a lot of missing features I'd like to add. Most of them are documented on the [Issues page](https://github.com/clearlysid/tauri-plugin-decorum/issues).
-In the long run though, I hope the Tauri team incorporates all these features natively in the framework and I looking forward to making this plugin redundant someday.
+In the long run though, I hope the Tauri team incorporates all these features within the framework and look forward to making this plugin redundant.
 
 Meanwhile, I hope you find this useful. Happy building! 🥂
