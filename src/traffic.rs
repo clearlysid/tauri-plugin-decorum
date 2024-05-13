@@ -1,7 +1,7 @@
 // Most contents of this file are taken from Hoppscotch's tauri app.
 // I think there is work to be done to improve it, but I'm happy with it for now.
 // Reference source code is linked below.
-// https://github.com/hoppscotch/hoppscotch/blob/286fcd2bb08a84f027b10308d1e18da368f95ebf/packages/hoppscotch-selfhost-desktop/src-tauri/src/mac/window.rs#L70-L101
+// https://github.com/hoppscotch/hoppscotch/blob/286fcd2bb08a84f027b10308d1e18da368f95ebf/packages/hoppscotch-selfhost-desktop/src-tauri/src/mac/window.rs
 
 use objc::{msg_send, sel, sel_impl};
 use rand::{distributions::Alphanumeric, Rng};

@@ -1,52 +1,47 @@
 # tauri-plugin-decorum
 
-This is a plugin for Tauri (v2-beta only, atm) that provides you a transparent/overlay-style titlebar specifically on Windows. MacOS is supported natively within Tauri, but on Windows the titlebar is not that customizable.
+A helper plugin for Tauri v2.0 that gives you convenient ways to:
+
+1. Have a transparent/overlay-style titlebar on Windows and macOS.
+2. Inset the macOS traffic light positions.
 
 ![demo](./wheeee.gif)
 
-This plugin covers:
+### Why build this?
 
-1. Windows: overlay titlebar with snap feature
-2. macOS: overlay titlebar
-3. macOS: traffic light positions
+I'm a designer and I'm _very_ particular about how window decorations should look and behave — this plugin is an opinionated take on titlebars. We retain all the native platform features (including Windows Snap Layout) and use transparent backgrounds to seamlessly sit within your app's UI.
 
 ## Usage examples
 
-1. **Windows overlay titlebar**
+For a full Tauri app that consumes this plugin, check the [examples folder](examples/tauri-app/).
 
 ```rust
-use tauri_plugin_decorum::WebviewWindowExt;
+use tauri::Manager;
+use tauri_plugin_decorum::WebviewWindowExt; // adds the helper methods to WebviewWindow
 
-let window: WebviewWindow = app.get_webview_window("main").unwrap();
-window.create_overlay_titlebar().unwrap();
-```
+fn main() {
+	tauri::Builder::default()
+		.plugin(tauri_plugin_decorum::init())
+		.setup(|app| {
+			// Create a custom titlebar for main window
+			// On Windows this will hide decoration and render custom window controls
+			// On macOS it expects a hiddenTitle: true and titleBarStyle: overlay
+			let main_window = app.get_webview_window("main").unwrap();
+			main_window.create_overlay_titlebar().unwrap();
 
-2. **macOS overlay titlebar**
+			// Set an inset to the traffic lights
+			#[cfg(target_os = "macos")]
+			main_window.set_traffic_lights_inset(12.0, 16.0).unwrap();
 
-```rust
-use tauri_plugin_decorum::overlay_titlebar_mac;
-
-let mut window_builder = WebviewWindowBuilder::new(app, "test", WebviewUrl::App("/".into())).decorations(true);
-overlay_titlebar_mac(window_builder)
-```
-
-3. **macOS traffic light inset**
-
-```rust
-use tauri_plugin_decorum::WebviewWindowExt;
-
-let window: WebviewWindow = app.get_webview_window("main").unwrap();
-window.set_traffic_light_inset((10.0, 10.0)).unwrap()
+			Ok(())
+		})
+		.run(tauri::generate_context!())
+		.expect("error while running tauri application");
+}
 ```
 
 ## Can I use it?
 
-Nothing's stopping you from using it right away, though I suggest waiting for a bit until I figure out the right API design for this --it's almost there.
+Please do! It's still early days and there's some missing features I'm yet to add. In the long run though, hopefully the Tauri team incorporates all the features of this plugin natively in the framework. Looking forward to making this plugin redundant.
 
-## TODOs
-
--   [ ] API design
--   [ ] Add alternate maximize icon
--   [ ] Support non-React frontends
--   [ ] Tweet at Microsoft demanding better WinRT integration with Rust
--   [ ] Profit !!!
+Meanwhile, happy building!
