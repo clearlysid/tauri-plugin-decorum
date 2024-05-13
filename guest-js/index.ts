@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
 
-export async function execute() {
-	await invoke("plugin:decorum|execute");
+export async function show_snap_overlay() {
+	await invoke("plugin:decorum|show_snap_overlay");
 }
