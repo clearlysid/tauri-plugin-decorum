@@ -22,12 +22,11 @@ Usage in Tauri:
 ```rust
 use tauri::Manager;
 
-// adds the helper methods to WebviewWindow
-use tauri_plugin_decorum::WebviewWindowExt;
+use tauri_plugin_decorum::WebviewWindowExt; // adds helper methods to WebviewWindow
 
 fn main() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_decorum::init())
+        .plugin(tauri_plugin_decorum::init()) // initialize the decorum plugin
         .setup(|app| {
 	    // Create a custom titlebar for main window
 	    // On Windows this hides decoration and creates custom window controls
@@ -48,14 +47,14 @@ fn main() {
 
 You'll also need to set these permissions for your window in `src-tauri/capabilities/default.json`
 ```
-"window:allow-start-dragging",
 "window:allow-close",
+"window:allow-center",
 "window:allow-minimize",
 "window:allow-maximize",
-"window:allow-center",
 "window:allow-set-size",
 "window:allow-set-focus"
-"decorum:allow-show-snap-overlay",
+"window:allow-start-dragging",
+"decorum:allow-show-snap-overlay"
 ```
 
 *I'm sure there's a better way to handle permissions from the plugin itself but haven't yet found it. Please create an issue/PR with more details if you know this.
