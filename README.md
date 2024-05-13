@@ -11,7 +11,7 @@ Being a designer, I'm _very_ particular about how window decorations look and be
 
 ## Installation and Usage
 
-Note: For a full example app that uses this plugin, check the [this folder](examples/tauri-app/).
+Note: For a full example app that uses this plugin, check this [folder](examples/tauri-app/).
 
 To install the plugin:
 ```bash
