@@ -46,6 +46,20 @@ fn main() {
 }
 ```
 
+You'll also need to set these permissions for your window in `src-tauri/capabilities/default.json`
+```
+"window:allow-start-dragging",
+"window:allow-close",
+"window:allow-minimize",
+"window:allow-maximize",
+"window:allow-center",
+"window:allow-set-size",
+"decorum:allow-show-snap-overlay"
+```
+
+*I'm sure there's a better way to handle permissions from the plugin itself but haven't yet found it. Please create an issue/PR with more details if you know this.
+
+
 ## Development Guide
 
 PRs and issues welcome! Here's a short primer to get you started with development on this:
