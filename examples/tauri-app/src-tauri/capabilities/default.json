@@ -20,6 +20,7 @@
 		"window:allow-maximize",
 		"window:allow-center",
 		"window:allow-set-size",
-		"decorum:allow-show-snap-overlay"
+		"decorum:allow-show-snap-overlay",
+		"window:allow-set-focus"
 	]
 }

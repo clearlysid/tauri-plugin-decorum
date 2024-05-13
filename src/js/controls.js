@@ -45,13 +45,19 @@ document.addEventListener("DOMContentLoaded", () => {
 			btn.classList.add("decorum-tb-btn")
 
 			let timer;
-			const show_snap_overlay = () =>
-				invoke("plugin:decorum|show_snap_overlay");
+			const show_snap_overlay = () => {
+				win.setFocus().then(() =>
+					invoke("plugin:decorum|show_snap_overlay")
+				);
+			}
 
 			switch (id) {
 				case "minimize":
 					btn.innerHTML = "\uE921";
-					btn.addEventListener("click", () => win.minimize());
+					btn.addEventListener("click", () => {
+						clearTimeout(timer)
+						win.minimize();
+					});
 					btn.addEventListener("mouseleave", () => clearTimeout(timer));
 					btn.addEventListener("mouseenter", () => {
 						timer = setTimeout(show_snap_overlay, 500);
@@ -59,10 +65,14 @@ document.addEventListener("DOMContentLoaded", () => {
 					break;
 				case "maximize":
 					btn.innerHTML = "\uE922";
-					btn.addEventListener("click", () => win.maximize());
+					btn.addEventListener("click", () => {
+						clearTimeout(timer)
+						win.maximize();
+					});
 					btn.addEventListener("mouseleave", () => clearTimeout(timer));
 					btn.addEventListener("mouseenter", () => {
 						timer = setTimeout(show_snap_overlay, 500);
+
 					});
 					break;
 				case "close":
@@ -81,6 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 		style.innerHTML = `
 		.decorum-tb-btn {
+			cursor: default;
       width: 58px;
       height: 32px;
       border: none;
