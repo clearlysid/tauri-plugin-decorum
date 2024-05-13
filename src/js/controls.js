@@ -60,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
 					});
 					btn.addEventListener("mouseleave", () => clearTimeout(timer));
 					btn.addEventListener("mouseenter", () => {
-						timer = setTimeout(show_snap_overlay, 500);
+						timer = setTimeout(show_snap_overlay, 620);
 					});
 					break;
 				case "maximize":
@@ -71,7 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
 					});
 					btn.addEventListener("mouseleave", () => clearTimeout(timer));
 					btn.addEventListener("mouseenter", () => {
-						timer = setTimeout(show_snap_overlay, 500);
+						timer = setTimeout(show_snap_overlay, 620);
 
 					});
 					break;
