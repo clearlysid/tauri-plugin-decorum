@@ -18,28 +18,43 @@ pub trait WebviewWindowExt {
     fn create_overlay_titlebar(&self) -> Result<&WebviewWindow, Error>;
     #[cfg(target_os = "macos")]
     fn set_traffic_lights_inset(&self, x: f32, y: f32) -> Result<&WebviewWindow, Error>;
+    #[doc(hidden)]
+    fn check_window(&self) -> bool;
 }
 
 impl<'a> WebviewWindowExt for WebviewWindow {
     fn create_overlay_titlebar(&self) -> Result<&WebviewWindow, Error> {
-        #[cfg(target_os = "windows")]
-        self.set_decorations(false)
-            .expect("failed to hide decorations");
-
         let win2 = self.clone();
+        #[cfg(target_os = "windows")]
+        {
+            let is_window_valid_for_overlay = win2.is_maximizable().unwrap()
+                && win2.is_minimizable().unwrap()
+                && win2.is_resizable().unwrap()
+                && win2.is_closable().unwrap();
+            if is_window_valid_for_overlay {
+                self.set_decorations(false)
+                    .expect("failed to hide decorations");
+            }
+        }
 
         self.listen("decorum-page-load", move |_| {
             // println!("decorum-page-load event received")
+            let is_window_valid_for_overlay = win2.is_maximizable().unwrap()
+                && win2.is_minimizable().unwrap()
+                && win2.is_resizable().unwrap()
+                && win2.is_closable().unwrap();
 
-            // Create a transparent draggable area for the titlebar
-            let script_tb = include_str!("js/titlebar.js");
-            win2.eval(script_tb).expect("couldn't run js");
+            if is_window_valid_for_overlay {
+                // Create a transparent draggable area for the titlebar
+                let script_tb = include_str!("js/titlebar.js");
+                win2.eval(script_tb).expect("couldn't run js");
 
-            // On Windows, create custom window controls
-            #[cfg(target_os = "windows")]
-            {
-                let script_controls = include_str!("js/controls.js");
-                win2.eval(script_controls).expect("couldn't run js");
+                // On Windows, create custom window controls
+                #[cfg(target_os = "windows")]
+                {
+                    let script_controls = include_str!("js/controls.js");
+                    win2.eval(script_controls).expect("couldn't run js");
+                }
             }
         });
 
@@ -54,6 +69,17 @@ impl<'a> WebviewWindowExt for WebviewWindow {
         traffic::position_traffic_lights(ns_window_handle, x.into(), y.into());
 
         Ok(self)
+    }
+
+    fn check_window(&self) -> bool {
+        let win2 = self.clone();
+
+        let is_window_valid_for_overlay = win2.is_maximizable().unwrap()
+            && win2.is_minimizable().unwrap()
+            && win2.is_resizable().unwrap()
+            && win2.is_closable().unwrap();
+
+        is_window_valid_for_overlay
     }
 }
 
