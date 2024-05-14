@@ -53,12 +53,13 @@ impl<'a> WebviewWindowExt for WebviewWindow {
                 }
 
                 let script_controls = include_str!("js/controls.js");
+                let controls = format!("{:?}", controls);
 
                 // this line finds ["minimize", "maximize", "close"] in the file
                 // and replaces it with only the controls enabled for the window
                 let script_controls = script_controls.replacen(
                     "[\"minimize\", \"maximize\", \"close\"]",
-                    &controls.join(", "),
+                    &controls,
                     1,
                 );
 
