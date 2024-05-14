@@ -1,16 +1,12 @@
 # tauri-plugin-decorum
 
-A Tauri plugin (v2.0 only for now) that gives you convenient ways to:
-
-1. Create transparent/overlay-style titlebars on Windows and macOS.
-2. Inset the macOS traffic light positions.
+Being a designer, I'm _very_ particular about window decorations. This Tauri plugin (for v2+ only, atm) is an opinionated take on titlebars and solves my gripes with the default ones by:
+1. retaining most native features (like Windows Snap Layout)
+2. not feeling too _disconnected_ from the rest of the app, by being transparent and blending in better
+3. offering custom inset for window controls that are often not aligned well with the rest of the contents
 
 ![demo](./wheeee.gif)
 
-Being a designer, I'm _very_ particular about window decorations. This plugin is an opinionated take on titlebars and solves my three gripes with the default ones:
-1. it retains most native features (like Windows Snap Layout)
-2. they doesn't feel _disconnected_ from the rest of your app and uses transparency to blend in
-3. they window controls often aren't aligned well with the rest of the contents
 
 ## Installation and Usage
 
@@ -28,9 +24,9 @@ use tauri::Manager;
 use tauri_plugin_decorum::WebviewWindowExt; // adds helper methods to WebviewWindow
 
 fn main() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_decorum::init()) // initialize the decorum plugin
-        .setup(|app| {
+	tauri::Builder::default()
+		.plugin(tauri_plugin_decorum::init()) // initialize the decorum plugin
+		.setup(|app| {
 	    // Create a custom titlebar for main window
 	    // On Windows this hides decoration and creates custom window controls
 	    // On macOS it needs hiddenTitle: true and titleBarStyle: overlay
@@ -42,9 +38,9 @@ fn main() {
 	    main_window.set_traffic_lights_inset(12.0, 16.0).unwrap();
 
 	    Ok(())
-        })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+		})
+		.run(tauri::generate_context!())
+		.expect("error while running tauri application");
 }
 ```
 
@@ -72,7 +68,7 @@ PRs and issues welcome! Here's a short primer to get you started with developmen
 
 ## Roadmap
 
-It's still early days and there's a lot of missing features I'd like to add. Most of them are documented on the [Issues page](https://github.com/clearlysid/tauri-plugin-decorum/issues).
-In the long run though, I hope the Tauri team incorporates all these features within the framework and look forward to making this plugin redundant.
+There's some missing features I'd still like to add, all documented on the [Issues page](https://github.com/clearlysid/tauri-plugin-decorum/issues).
+In the long run though I hope the core team incorporates all these within Tauri and I look forward to making this plugin obsolete.
 
 Meanwhile, I hope you find this useful. Happy building! 🥂
