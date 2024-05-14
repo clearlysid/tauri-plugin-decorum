@@ -1,6 +1,6 @@
 # tauri-plugin-decorum
 
-Being a designer, I'm _very_ particular about window decorations. This Tauri plugin (for v2+ only, atm) is an opinionated take on titlebars and solves my gripes with the default ones by:
+Being a designer, I'm _very_ particular about window decorations. This Tauri (v2 only) plugin is an opinionated take on titlebars and solves my gripes with the default one. It does so by:
 1. retaining most native features (like Windows Snap Layout)
 2. not feeling too _disconnected_ from the rest of the app, by being transparent and blending in better
 3. offering custom inset for window controls that are often not aligned well with the rest of the contents
