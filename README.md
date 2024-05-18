@@ -1,16 +1,16 @@
 # tauri-plugin-decorum
 
-Being a designer, I'm _very_ particular about window decorations. This Tauri (v2 only) plugin is an opinionated take on titlebars and solves my gripes with the default one. It does so by:
+Being a designer, I'm _very_ particular about window decorations. This Tauri plugin (v2 only) is an opinionated take on titlebars that solves all my gripes with the default ones. It does so by:
 1. retaining most native features (like Windows Snap Layout)
-2. not feeling too _disconnected_ from the rest of the app, by being transparent and blending in better
-3. offering custom inset for window controls that are often not aligned well with the rest of the contents
+2. not feeling too _disconnected_ from the rest of the app UI, by being transparent and blending in better
+3. offering custom inset for macOS traffic lights that are often not aligned well with the rest of the contents
 
 ![demo](./wheeee.gif)
 
 
 ## Installation and Usage
 
-Note: For a full example app that uses this plugin, check this [folder](examples/tauri-app/).
+For a full example app that uses this plugin, check out [examples/tauri-app](examples/tauri-app/).
 
 To install the plugin:
 ```bash
@@ -56,7 +56,7 @@ You'll also need to set these permissions for your window in `src-tauri/capabili
 "decorum:allow-show-snap-overlay",
 ```
 
-*there's likely a better way to handle plugin permissions that I haven't found, please let me know if you have!
+*there's probably a better way to handle plugin permissions that I haven't found yet. if you have, pls lmk!
 
 
 ## Development Guide
