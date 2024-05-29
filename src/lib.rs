@@ -1,7 +1,7 @@
 use anyhow::Error;
 use tauri::{
     plugin::{Builder, TauriPlugin},
-    Manager, Runtime, WebviewWindow,
+    Manager, Runtime, WebviewWindow, Window, WindowEvent,
 };
 
 #[cfg(target_os = "macos")]
@@ -28,7 +28,7 @@ impl<'a> WebviewWindowExt for WebviewWindow {
 
         let win2 = self.clone();
 
-        self.listen("decorum-page-load", move |_| {
+        self.listen("decorum-page-load", move |event| {
             // println!("decorum-page-load event received")
 
             // Create a transparent draggable area for the titlebar
@@ -65,6 +65,16 @@ impl<'a> WebviewWindowExt for WebviewWindow {
 
                 win2.eval(script_controls.as_str())
                     .expect("couldn't run js");
+
+                let win3 = win2.clone();
+                win2.on_window_event(move |eve| {
+                    match eve {
+                        WindowEvent::CloseRequested { .. } => {
+                            win3.unlisten(event.id());
+                        }
+                        _ => {}
+                    }
+                });
             }
         });
 
