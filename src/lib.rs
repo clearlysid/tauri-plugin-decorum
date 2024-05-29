@@ -1,7 +1,7 @@
 use anyhow::Error;
 use tauri::{
     plugin::{Builder, TauriPlugin},
-    Manager, Runtime, WebviewWindow, Window, WindowEvent,
+    Manager, Runtime, WebviewWindow, WindowEvent,
 };
 
 #[cfg(target_os = "macos")]
