@@ -129,6 +129,7 @@ impl<'a> WebviewWindowExt for WebviewWindow {
 
     /// Set the window level.
     /// This will set the window level to the specified value.
+    /// NSWindowLevel values can be found [here](https://developer.apple.com/documentation/appkit/nswindowlevel?language=objc).
     /// This is only available on macOS.
     #[cfg(target_os = "macos")]
     fn set_window_level(&self, level: u32) -> Result<&WebviewWindow, Error> {
