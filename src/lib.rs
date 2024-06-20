@@ -34,12 +34,14 @@ impl<'a> WebviewWindowExt for WebviewWindow {
 
         let win2 = self.clone();
 
-        self.listen("decorum-page-load", move |event| {
+        self.listen("decorum-page-load", move |_event| {
             // println!("decorum-page-load event received")
 
             // Create a transparent draggable area for the titlebar
             let script_tb = include_str!("js/titlebar.js");
-            win2.eval(script_tb).expect("couldn't run js");
+
+            win2.eval(script_tb)
+                .unwrap_or_else(|e| println!("decorum error: {:?}", e));
 
             // On Windows, create custom window controls
             #[cfg(target_os = "windows")]
