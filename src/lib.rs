@@ -33,7 +33,7 @@ impl<'a> WebviewWindowExt for WebviewWindow {
 
         let win2 = self.clone();
 
-        self.listen("decorum-page-load", move |_event| {
+        self.listen("decorum-page-load", move |event| {
             // println!("decorum-page-load event received")
 
             // Create a transparent draggable area for the titlebar
