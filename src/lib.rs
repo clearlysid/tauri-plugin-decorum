@@ -1,6 +1,6 @@
 use tauri::{
     plugin::{Builder, TauriPlugin},
-    Error, Manager, Runtime, WebviewWindow,
+    Emitter, Error, Listener, Runtime, WebviewWindow,
 };
 
 #[cfg(target_os = "macos")]
