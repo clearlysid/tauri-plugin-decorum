@@ -1,6 +1,6 @@
 [package]
 name = "tauri-plugin-decorum"
-version = "0.1.3"
+version = "0.1.4"
 authors = [ "Siddharth" ]
 description = "Opnionated window decoration controls for apps built with Tauri."
 edition = "2021"
@@ -12,7 +12,7 @@ homepage = "https://github.com/clearlysid/tauri-plugin-decorum"
 repository = "https://github.com/clearlysid/tauri-plugin-decorum"
 
 [dependencies]
-tauri = { version = "2.0.0-beta.17" }
+tauri = { version = "2.0.0-beta" }
 serde = "1.0"
 anyhow = "1.0"
 
@@ -25,4 +25,4 @@ objc = "0.2"
 windows = "0.56.0"
 
 [build-dependencies]
-tauri-plugin = { version = "2.0.0-beta.13", features = ["build"] }
+tauri-plugin = { version = "2.0.0-beta", features = ["build"] }
