@@ -12,15 +12,9 @@ rust-version = "1.70"
 
 [build-dependencies]
 tauri-build = { version = "2.0.0-beta", default-features = false , features = [] }
-cxx-build = "1.0"
 
 [dependencies]
 tauri = { version = "2.0.0-beta", features = [] }
 tauri-plugin-decorum = { path = "../../../" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-cxx = "1.0.119"
-enigo = "0.2.0"
-anyhow = "1.0.82"
-window-vibrancy = "0.5.0"
-windows = "0.56.0"
