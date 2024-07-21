@@ -22,7 +22,7 @@
     "pretest": "yarn build"
   },
   "dependencies": {
-    "@tauri-apps/api": ">=2.0.0-beta.6"
+    "@tauri-apps/api": ">=2.0.0-beta.24"
   },
   "devDependencies": {
     "@rollup/plugin-typescript": "^11.1.6",

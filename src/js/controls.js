@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		return;
 	}
 
-	const win = tauri.window.getCurrent();
+	const win = tauri.window.getCurrentWindow();
 	const invoke = tauri.core.invoke;
 
 	console.log("DECORUM: Waiting for [data-tauri-decorum-tb] ...")
