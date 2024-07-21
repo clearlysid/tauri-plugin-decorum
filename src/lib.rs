@@ -33,7 +33,7 @@ impl<'a> WebviewWindowExt for WebviewWindow {
 
         let win2 = self.clone();
 
-        self.listen("decorum-page-load", move |event| {
+        self.listen("decorum-page-load", move |_event| {
             // println!("decorum-page-load event received")
 
             // Create a transparent draggable area for the titlebar
@@ -76,7 +76,7 @@ impl<'a> WebviewWindowExt for WebviewWindow {
                 let win3 = win2.clone();
                 win2.on_window_event(move |eve| match eve {
                     tauri::WindowEvent::CloseRequested { .. } => {
-                        win3.unlisten(event.id());
+                        win3.unlisten(_event.id());
                     }
                     _ => {}
                 });
@@ -103,8 +103,7 @@ impl<'a> WebviewWindowExt for WebviewWindow {
 
     /// Set the window background to transparent.
     /// This helper function is different from Tauri's default
-    /// as it doesn't make use of the `transparent` window attribute.
-    /// and doesn't need macOS Private APIs.
+    /// as it doesn't use the `transparent` flag or macOS Private APIs.
     #[cfg(target_os = "macos")]
     fn make_transparent(&self) -> Result<&WebviewWindow, Error> {
         use cocoa::{
@@ -158,18 +157,20 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
                 Err(e) => println!("decorum error: {:?}", e),
             }
         })
-        .on_window_ready(|win| {
+        .on_window_ready(|_win| {
             #[cfg(target_os = "macos")]
-            traffic::setup_traffic_light_positioner(win);
+            traffic::setup_traffic_light_positioner(_win);
             return;
         })
         .build()
 }
 
+#[cfg(target_os = "macos")]
 fn is_main_thread() -> bool {
     std::thread::current().name() == Some("main")
 }
 
+#[cfg(target_os = "macos")]
 fn ensure_main_thread<F>(
     win: &WebviewWindow,
     main_action: F,
