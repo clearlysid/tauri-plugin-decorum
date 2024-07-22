@@ -1,10 +1,10 @@
 function waitForElm(selector) {
-	return new Promise(resolve => {
+	return new Promise((resolve) => {
 		if (document.querySelector(selector)) {
 			return resolve(document.querySelector(selector));
 		}
 
-		const observer = new MutationObserver(mutations => {
+		const observer = new MutationObserver((mutations) => {
 			if (document.querySelector(selector)) {
 				observer.disconnect();
 				resolve(document.querySelector(selector));
@@ -14,11 +14,10 @@ function waitForElm(selector) {
 		// If you get "parameter 1 is not of type 'Node'" error, see https://stackoverflow.com/a/77855838/492336
 		observer.observe(document.body, {
 			childList: true,
-			subtree: true
+			subtree: true,
 		});
 	});
 }
-
 
 document.addEventListener("DOMContentLoaded", () => {
 	const tauri = window.__TAURI__;
@@ -34,45 +33,49 @@ document.addEventListener("DOMContentLoaded", () => {
 	const win = tauri.window.getCurrentWindow();
 	const invoke = tauri.core.invoke;
 
-	console.log("DECORUM: Waiting for [data-tauri-decorum-tb] ...")
+	console.log("DECORUM: Waiting for [data-tauri-decorum-tb] ...");
 
-	waitForElm("[data-tauri-decorum-tb]").then(tbEl => {
-
+	waitForElm("[data-tauri-decorum-tb]").then((tbEl) => {
 		// Create button func
 		const createButton = (id) => {
 			const btn = document.createElement("button");
 			btn.id = "decorum-tb-" + id;
-			btn.classList.add("decorum-tb-btn")
+			btn.classList.add("decorum-tb-btn");
 
 			let timer;
 			const show_snap_overlay = () => {
-				win.setFocus().then(() =>
-					invoke("plugin:decorum|show_snap_overlay")
-				);
-			}
+				win.setFocus().then(() => invoke("plugin:decorum|show_snap_overlay"));
+			};
 
 			switch (id) {
 				case "minimize":
 					btn.innerHTML = "\uE921";
+
 					btn.addEventListener("click", () => {
-						clearTimeout(timer)
+						clearTimeout(timer);
 						win.minimize();
 					});
-					btn.addEventListener("mouseleave", () => clearTimeout(timer));
-					btn.addEventListener("mouseenter", () => {
-						timer = setTimeout(show_snap_overlay, 620);
-					});
+
 					break;
 				case "maximize":
 					btn.innerHTML = "\uE922";
+					win.onResized(() => {
+						win.isMaximized().then((maximized) => {
+							if (maximized) {
+								btn.innerHTML = "\uE923";
+							} else {
+								btn.innerHTML = "\uE922";
+							}
+						});
+					});
+
 					btn.addEventListener("click", () => {
-						clearTimeout(timer)
-						win.maximize();
+						clearTimeout(timer);
+						win.toggleMaximize();
 					});
 					btn.addEventListener("mouseleave", () => clearTimeout(timer));
 					btn.addEventListener("mouseenter", () => {
 						timer = setTimeout(show_snap_overlay, 620);
-
 					});
 					break;
 				case "close":
@@ -121,5 +124,5 @@ document.addEventListener("DOMContentLoaded", () => {
 				background-color: rgba(255,0,0,0.7) !important;
 			}
 		`;
-	})
+	});
 });
