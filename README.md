@@ -70,6 +70,36 @@ You'll also need to set these permissions for your window in `src-tauri/capabili
 
 \*there's probably a better way to handle plugin permissions that I haven't found yet. if you have, pls lmk!
 
+### Button customization
+
+You can customize the titlebar buttons by overriding the css like this:
+
+```css
+/* style of all buttons */
+button.decorum-tb-btn {
+  height: 24px !important;
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.2) !important;
+  }
+}
+/* style of a button to minimize window */
+button#decorum-tb-minimize {
+}
+/* style of a button to maximize window */
+button#decorum-tb-maximize {
+}
+/* style of a button to close window */
+button#decorum-tb-close {
+  &:hover {
+    background-color: rgba(255, 0, 255, 0.7) !important;
+  }
+}
+/* style of the whole tauri-decorum container */
+div[data-tauri-decorum-tb] {
+  height: 24px !important;
+}
+```
+
 ## Development Guide
 
 PRs and issues welcome! Here's a short primer to get you started with development on this:
