@@ -7,8 +7,8 @@ use objc::{msg_send, sel, sel_impl};
 use rand::{distributions::Alphanumeric, Rng};
 use tauri::{Emitter, Runtime, Window};
 
-const WINDOW_CONTROL_PAD_X: f64 = 8.0;
-const WINDOW_CONTROL_PAD_Y: f64 = 12.0;
+const WINDOW_CONTROL_PAD_X: f64 = 12.0;
+const WINDOW_CONTROL_PAD_Y: f64 = 16.0;
 
 pub struct UnsafeWindowHandle(pub *mut std::ffi::c_void);
 unsafe impl Send for UnsafeWindowHandle {}
@@ -21,8 +21,7 @@ pub fn position_traffic_lights(ns_window_handle: UnsafeWindowHandle, x: f64, y: 
     let ns_window = ns_window_handle.0 as cocoa::base::id;
     unsafe {
         let close = ns_window.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
-        let miniaturize =
-            ns_window.standardWindowButton_(NSWindowButton::NSWindowMiniaturizeButton);
+        let miniaturize = ns_window.standardWindowButton_(NSWindowButton::NSWindowMiniaturizeButton);
         let zoom = ns_window.standardWindowButton_(NSWindowButton::NSWindowZoomButton);
 
         let title_bar_container_view = close.superview().superview();
@@ -37,11 +36,14 @@ pub fn position_traffic_lights(ns_window_handle: UnsafeWindowHandle, x: f64, y: 
         let _: () = msg_send![title_bar_container_view, setFrame: title_bar_rect];
 
         let window_buttons = vec![close, miniaturize, zoom];
-        let space_between = NSView::frame(miniaturize).origin.x - NSView::frame(close).origin.x;
+        let space_between = 20.0; // Fixed space between buttons
+        let vertical_offset = 4.0; // Adjust this value to push buttons down
 
         for (i, button) in window_buttons.into_iter().enumerate() {
             let mut rect: NSRect = NSView::frame(button);
             rect.origin.x = x + (i as f64 * space_between);
+            // Adjust vertical positioning
+            rect.origin.y = ((title_bar_frame_height - button_height) / 2.0) - vertical_offset;
             button.setFrameOrigin(rect.origin);
         }
     }
@@ -106,8 +108,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                     let id = state
                         .window
                         .ns_window()
-                        .expect("NS window should exist on state to handle resize")
-                        as id;
+                        .expect("NS window should exist on state to handle resize") as id;
 
                     #[cfg(target_os = "macos")]
                     position_traffic_lights(
