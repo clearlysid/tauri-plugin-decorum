@@ -16,11 +16,11 @@
 
 .container {
 	margin: 0;
-	padding-top: 10vh;
+	height: 100vh;
 	display: flex;
+	text-align: center;
 	flex-direction: column;
 	justify-content: center;
-	text-align: center;
 }
 
 .logo {
@@ -93,6 +93,12 @@ button {
 		color: #f6f6f6;
 		background-image: linear-gradient(180deg, #350042 0%, #1f003b 100%);
 		background-size: cover;
+	}
+
+	body {
+		height: 100vh;
+		overscroll-behavior: none;
+		overflow: hidden;
 	}
 
 	a:hover {
