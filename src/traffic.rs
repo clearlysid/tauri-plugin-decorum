@@ -21,7 +21,8 @@ pub fn position_traffic_lights(ns_window_handle: UnsafeWindowHandle, x: f64, y: 
     let ns_window = ns_window_handle.0 as cocoa::base::id;
     unsafe {
         let close = ns_window.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
-        let miniaturize = ns_window.standardWindowButton_(NSWindowButton::NSWindowMiniaturizeButton);
+        let miniaturize =
+            ns_window.standardWindowButton_(NSWindowButton::NSWindowMiniaturizeButton);
         let zoom = ns_window.standardWindowButton_(NSWindowButton::NSWindowZoomButton);
 
         let title_bar_container_view = close.superview().superview();
@@ -108,7 +109,8 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                     let id = state
                         .window
                         .ns_window()
-                        .expect("NS window should exist on state to handle resize") as id;
+                        .expect("NS window should exist on state to handle resize")
+                        as id;
 
                     #[cfg(target_os = "macos")]
                     position_traffic_lights(
