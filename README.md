@@ -2,9 +2,9 @@
 
 Being a designer, I'm _very_ particular about window decorations. This Tauri plugin (v2 only) is an opinionated take on titlebars that solves all my gripes with the default ones. It does so by:
 
-1. retaining most native features (like Windows Snap Layout)
-2. not feeling too _disconnected_ from the rest of the app UI, by being transparent and blending in better
-3. offering custom inset for macOS traffic lights that are often not aligned well with the rest of the contents
+1. retain native features, like Windows Snap Layout.
+2. blend into your app's UI better with transparency and overlay controls.
+3. inset macOS traffic lights that are often misaligned with other window contents.
 
 ![demo](./wheeee.gif)
 
@@ -58,45 +58,37 @@ fn main() {
 You'll also need to set these permissions for your window in `src-tauri/capabilities/default.json`
 
 ```
-"window:allow-close",
-"window:allow-center",
-"window:allow-minimize",
-"window:allow-maximize",
-"window:allow-set-size",
-"window:allow-set-focus",
-"window:allow-start-dragging",
+"core:window:allow-close",
+"core:window:allow-center",
+"core:window:allow-minimize",
+"core:window:allow-maximize",
+"core:window:allow-set-size",
+"core:window:allow-set-focus",
+"core:window:allow-start-dragging",
 "decorum:allow-show-snap-overlay",
 ```
 
 \*there's probably a better way to handle plugin permissions that I haven't found yet. if you have, pls lmk!
 
-### Button customization
+### Button customization with CSS
 
-You can customize the titlebar buttons by overriding the css like this:
+In case you want to style the window controls yourself, you can use the following class-names to do so:
 
 ```css
-/* style of all buttons */
+/* all buttons */
 button.decorum-tb-btn {
-  height: 24px !important;
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.2) !important;
-  }
 }
-/* style of a button to minimize window */
+/* minimize button */
 button#decorum-tb-minimize {
 }
-/* style of a button to maximize window */
+/* maximize button */
 button#decorum-tb-maximize {
 }
-/* style of a button to close window */
+/* close button */
 button#decorum-tb-close {
-  &:hover {
-    background-color: rgba(255, 0, 255, 0.7) !important;
-  }
 }
-/* style of the whole tauri-decorum container */
+/* titlebar container */
 div[data-tauri-decorum-tb] {
-  height: 24px !important;
 }
 ```
 
@@ -106,11 +98,16 @@ PRs and issues welcome! Here's a short primer to get you started with developmen
 
 1. Ensure you have all the [Tauri prerequisites](https://beta.tauri.app/start/prerequisites/) set up
 2. Clone this repo
-3. Use the [example app](examples/tauri-app) as a test bed for your changes
+3. Use the [example app](examples/tauri-app) as a test bed with `yarn tauri dev`
 
 ## Roadmap
 
-There's some missing features I'd still like to add, all documented on the [Issues page](https://github.com/clearlysid/tauri-plugin-decorum/issues).
+~~There's some missing features I'd still like to add, all documented on the [Issues page](https://github.com/clearlysid/tauri-plugin-decorum/issues).~~
+
+All the features I wanted to add are either already added by me or someone from the community. Thank you so much for your contributions! 🥳
+
+I'm keeping the project mostly in maintainance mode now. There aren't going to be any breaking API changes, other than architecture improvements and bugfixes. PRs are always welcome and I will help merge them as quick as I can.
+
 In the long run though I hope the core team incorporates all these within Tauri and I look forward to making this plugin obsolete.
 
-Meanwhile, I hope you find this useful. Happy building! 🥂
+Meanwhile, I hope you find it useful. Happy building! 🥂

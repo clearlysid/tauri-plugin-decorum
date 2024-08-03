@@ -1,6 +1,6 @@
 {
   "name": "tauri-plugin-decorum-api",
-  "version": "0.1.6",
+  "version": "1.0.0",
   "author": "Siddharth <siddharth99c@gmail.com>",
   "description": "",
   "type": "module",

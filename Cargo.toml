@@ -1,8 +1,8 @@
 [package]
 name = "tauri-plugin-decorum"
-version = "0.1.6"
-authors = ["Siddharth"]
-description = "Opnionated window decoration controls for apps built with Tauri."
+version = "1.0.0"
+authors = ["Siddharth <siddharth99c@gmail.com>"]
+description = "Opnionated window decoration controls for Tauri apps."
 edition = "2021"
 rust-version = "1.70"
 exclude = ["/examples", "/webview-dist", "/webview-src", "/node_modules"]
