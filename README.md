@@ -1,7 +1,6 @@
 # tauri-plugin-decorum
 
-Being a designer, I'm _very_ particular about window decorations. This Tauri plugin (v2 only) is an opinionated take on titlebars that solves all my gripes with the default ones. It does so by:
-
+Being a designer, I'm _very_ particular about window decorations. This Tauri (v2) plugin is an opinionated take on titlebars that my gripes with the default ones. Features:
 1. retain native features, like Windows Snap Layout.
 2. blend into your app's UI better with transparency and overlay controls.
 3. inset macOS traffic lights that are often misaligned with other window contents.
@@ -12,13 +11,33 @@ Being a designer, I'm _very_ particular about window decorations. This Tauri plu
 
 For a full example app that uses this plugin, check out [examples/tauri-app](examples/tauri-app/).
 
-To install the plugin:
+### install the plugin
 
 ```bash
 cargo add tauri-plugin-decorum
 ```
 
-Usage in Tauri:
+### set permissions
+
+You'll need to set these for your window in `src-tauri/capabilities/default.json`
+
+```
+"core:window:allow-close",
+"core:window:allow-center",
+"core:window:allow-minimize",
+"core:window:allow-maximize",
+"core:window:allow-set-size",
+"core:window:allow-set-focus",
+"core:window:allow-start-dragging",
+"decorum:allow-show-snap-overlay",
+```
+
+And ensure the `withGlobalTauri` in your `tauri.conf.json` is set to `true`.
+
+\*there's probably a better way to handle plugin permissions that I haven't found yet. if you have, pls lmk!
+
+
+### usage in tauri:
 
 ```rust
 use tauri::Manager;
@@ -55,7 +74,7 @@ fn main() {
 }
 ```
 
-You'll also need to set these permissions for your window in `src-tauri/capabilities/default.json`
+
 
 ```
 "core:window:allow-close",
@@ -71,26 +90,16 @@ You'll also need to set these permissions for your window in `src-tauri/capabili
 
 \*there's probably a better way to handle plugin permissions that I haven't found yet. if you have, pls lmk!
 
-### Button customization with CSS
+### custom buttons with css:
 
-In case you want to style the window controls yourself, you can use the following class-names to do so:
+If you want to style the window controls yourself, you can use one of the following class-names to do so:
 
 ```css
-/* all buttons */
-button.decorum-tb-btn {
-}
-/* minimize button */
-button#decorum-tb-minimize {
-}
-/* maximize button */
-button#decorum-tb-maximize {
-}
-/* close button */
-button#decorum-tb-close {
-}
-/* titlebar container */
-div[data-tauri-decorum-tb] {
-}
+button.decorum-tb-btn,
+button#decorum-tb-minimize,
+button#decorum-tb-maximize,
+button#decorum-tb-close,
+div[data-tauri-decorum-tb], {}
 ```
 
 ## Development Guide
@@ -105,10 +114,8 @@ PRs and issues welcome! Here's a short primer to get you started with developmen
 
 ~~There's some missing features I'd still like to add, all documented on the [Issues page](https://github.com/clearlysid/tauri-plugin-decorum/issues).~~
 
-All the features I wanted to add are either already added by me or someone from the community. Thank you so much for your contributions! 🥳
+All the features I wanted are now added by me or a community member — thank you so much for your contributions! 🥳
 
-I'm keeping the project mostly in maintainance mode now. There aren't going to be any breaking API changes, other than architecture improvements and bugfixes. PRs are always welcome and I will help merge them as quick as I can.
-
-In the long run though I hope the core team incorporates all these within Tauri and I look forward to making this plugin obsolete.
+The project mostly in maintainance mode now — no breaking API changes, other than architecture improvements and bugfixes. PRs are always welcome! I'll help merge them as quick as I can. In the long run I hope the core team incorporates all these within Tauri and I look forward to making this plugin obsolete.
 
 Meanwhile, I hope you find it useful. Happy building! 🥂
