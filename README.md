@@ -78,7 +78,7 @@ fn main() {
 
 ### custom buttons with css:
 
-If you want to style the window controls yourself, you can use the following class-names to do so:
+If you want to style the window controls yourself, you can use one of the following class-names to do so:
 
 ```css
 button.decorum-tb-btn,
@@ -100,10 +100,8 @@ PRs and issues welcome! Here's a short primer to get you started with developmen
 
 ~~There's some missing features I'd still like to add, all documented on the [Issues page](https://github.com/clearlysid/tauri-plugin-decorum/issues).~~
 
-All the features I wanted to add are either already added by me or someone from the community. Thank you so much for your contributions! 🥳
+All the features I wanted are now added by me or a community member — thank you so much for your contributions! 🥳
 
-I'm keeping the project mostly in maintainance mode now. There aren't going to be any breaking API changes, other than architecture improvements and bugfixes. PRs are always welcome and I will help merge them as quick as I can.
-
-In the long run though I hope the core team incorporates all these within Tauri and I look forward to making this plugin obsolete.
+The project mostly in maintainance mode now — no breaking API changes, other than architecture improvements and bugfixes. PRs are always welcome! I'll help merge them as quick as I can. In the long run I hope the core team incorporates all these within Tauri and I look forward to making this plugin obsolete.
 
 Meanwhile, I hope you find it useful. Happy building! 🥂
