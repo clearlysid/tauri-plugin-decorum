@@ -29,6 +29,7 @@ You'll need to set these for your window in `src-tauri/capabilities/default.json
 "core:window:allow-set-size",
 "core:window:allow-set-focus",
 "core:window:allow-start-dragging",
+"core:window:allow-toggle-maximize",
 "decorum:allow-show-snap-overlay",
 ```
 
@@ -73,22 +74,6 @@ fn main() {
 		.expect("error while running tauri application");
 }
 ```
-
-
-
-```
-"core:window:allow-close",
-"core:window:allow-center",
-"core:window:allow-minimize",
-"core:window:allow-maximize",
-"core:window:allow-set-size",
-"core:window:allow-set-focus",
-"core:window:allow-start-dragging",
-"core:window:allow-toggle-maximize",
-"decorum:allow-show-snap-overlay",
-```
-
-\*there's probably a better way to handle plugin permissions that I haven't found yet. if you have, pls lmk!
 
 ### custom buttons with css:
 
