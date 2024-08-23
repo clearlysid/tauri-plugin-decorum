@@ -65,6 +65,7 @@ You'll also need to set these permissions for your window in `src-tauri/capabili
 "core:window:allow-set-size",
 "core:window:allow-set-focus",
 "core:window:allow-start-dragging",
+"core:window:allow-toggle-maximize",
 "decorum:allow-show-snap-overlay",
 ```
 
