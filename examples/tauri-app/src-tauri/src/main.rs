@@ -1,7 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::Manager;
+use tauri::{LogicalPosition, Manager};
 use tauri_plugin_decorum::WebviewWindowExt;
 
 fn main() {
@@ -15,7 +15,7 @@ fn main() {
             main_window.create_overlay_titlebar().unwrap();
 
             #[cfg(target_os = "macos")]
-            main_window.set_traffic_lights_inset(16.0, 20.0).unwrap();
+            let _ = main_window.set_traffic_lights_inset(Some(LogicalPosition::new(16.0, 20.0)));
             Ok(())
         })
         .run(tauri::generate_context!())

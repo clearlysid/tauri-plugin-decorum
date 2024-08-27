@@ -1,24 +1,62 @@
+use std::collections::HashMap;
+use std::sync::Arc;
+
+use macos::nswindow_delegates;
+use parking_lot::RwLock;
 use tauri::plugin::{Builder, TauriPlugin};
-use tauri::{Emitter, Error, Listener, Runtime, WebviewWindow};
-
-#[cfg(target_os = "macos")]
-mod traffic;
-
-mod commands;
+use tauri::{Emitter, Error, Listener, LogicalPosition, Manager, Runtime, WebviewWindow};
 
 #[cfg(target_os = "macos")]
 #[macro_use]
 extern crate objc;
 
+mod commands;
+
+#[cfg(target_os = "macos")]
+mod macos;
+
+#[repr(u32)]
+pub enum NSWindowLevel {
+    NSNormalWindowLevel = 0,
+    NSFloatingOrSubmenuOrTornOffMenuWindowLevel = 3,
+    NSMainMenuWindowLevel = 24,
+    NSStatusWindowLevel = 25,
+    NSModalPanelWindowLevel = 8,
+    NSPopUpMenuWindowLevel = 101,
+    NSScreenSaverWindowLevel = 1000,
+}
+
+impl From<String> for NSWindowLevel {
+    fn from(s: String) -> Self {
+        match s.as_str() {
+            "NSNormalWindowLevel" => NSWindowLevel::NSNormalWindowLevel,
+            "NSFloatingWindowLevel" => NSWindowLevel::NSFloatingOrSubmenuOrTornOffMenuWindowLevel,
+            "NSSubmenuWindowLevel" => NSWindowLevel::NSFloatingOrSubmenuOrTornOffMenuWindowLevel,
+            "NSTornOffMenuWindowLevel" => {
+                NSWindowLevel::NSFloatingOrSubmenuOrTornOffMenuWindowLevel
+            }
+            "NSMainMenuWindowLevel" => NSWindowLevel::NSMainMenuWindowLevel,
+            "NSStatusWindowLevel" => NSWindowLevel::NSStatusWindowLevel,
+            "NSModalPanelWindowLevel" => NSWindowLevel::NSModalPanelWindowLevel,
+            "NSPopUpMenuWindowLevel" => NSWindowLevel::NSPopUpMenuWindowLevel,
+            "NSScreenSaverWindowLevel" => NSWindowLevel::NSScreenSaverWindowLevel,
+            _ => panic!("Unknown NSWindowLevel string: {}", s),
+        }
+    }
+}
+
 /// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the decorum APIs.
 pub trait WebviewWindowExt {
     fn create_overlay_titlebar(&self) -> Result<&WebviewWindow, Error>;
     #[cfg(target_os = "macos")]
-    fn set_traffic_lights_inset(&self, x: f32, y: f32) -> Result<&WebviewWindow, Error>;
+    fn set_traffic_lights_inset(
+        &self,
+        inset: Option<LogicalPosition<f64>>,
+    ) -> Result<&WebviewWindow, Error>;
     #[cfg(target_os = "macos")]
     fn make_transparent(&self) -> Result<&WebviewWindow, Error>;
     #[cfg(target_os = "macos")]
-    fn set_window_level(&self, level: u32) -> Result<&WebviewWindow, Error>;
+    fn set_window_level(&self, level: NSWindowLevel) -> Result<&WebviewWindow, Error>;
 }
 
 impl<'a> WebviewWindowExt for WebviewWindow {
@@ -88,15 +126,36 @@ impl<'a> WebviewWindowExt for WebviewWindow {
     /// This will move the traffic lights to the specified position.
     /// This is only available on macOS.
     #[cfg(target_os = "macos")]
-    fn set_traffic_lights_inset(&self, x: f32, y: f32) -> Result<&WebviewWindow, Error> {
-        ensure_main_thread(self, move |win| {
-            let ns_window = win.ns_window()?;
-            let ns_window_handle = traffic::UnsafeWindowHandle(ns_window);
+    fn set_traffic_lights_inset(
+        &self,
+        inset: Option<LogicalPosition<f64>>,
+    ) -> Result<&WebviewWindow, Error> {
+        let insets_state = &self.state::<TrafficLightsInsetsState>();
+        let mut insets_map = insets_state.0.write();
 
-            traffic::position_traffic_lights(ns_window_handle, x.into(), y.into());
+        let window_label = self.label().to_string();
 
-            Ok(win)
-        })
+        match inset {
+            Some(inset) => {
+                if insets_map.insert(window_label, inset.clone()).is_none() {
+                    self.on_window_event(move |event| match event {
+                        tauri::WindowEvent::ThemeChanged(_) => {
+                            // TODO: Update
+                        }
+                        _ => (),
+                    });
+                }
+
+                ensure_main_thread(self, move |win| {
+                    // macos::update_traffic_lights_inset(win);
+                    Ok(win)
+                })
+            }
+            None => {
+                insets_map.remove(&window_label);
+                Ok(self)
+            }
+        }
     }
 
     /// Set the window background to transparent.
@@ -105,7 +164,6 @@ impl<'a> WebviewWindowExt for WebviewWindow {
     #[cfg(target_os = "macos")]
     fn make_transparent(&self) -> Result<&WebviewWindow, Error> {
         use cocoa::{
-            appkit::NSColor,
             base::{id, nil},
             foundation::NSString,
         };
@@ -118,24 +176,15 @@ impl<'a> WebviewWindowExt for WebviewWindow {
                 msg_send![id, setValue:no forKey: NSString::alloc(nil).init_str("drawsBackground")];
         })?;
 
-        // Make window background transparent
-        ensure_main_thread(self, move |win| {
-            let ns_win = win.ns_window()? as id;
-            unsafe {
-                let win_bg_color =
-                    NSColor::colorWithSRGBRed_green_blue_alpha_(nil, 0.0, 0.0, 0.0, 0.0);
-                let _: id = msg_send![ns_win, setBackgroundColor: win_bg_color];
-            }
-            Ok(win)
-        })
+        Ok(self)
     }
 
     /// Set the window level.
     /// This will set the window level to the specified value.
-    /// NSWindowLevel values can be found [here](https://developer.apple.com/documentation/appkit/nswindowlevel?language=objc).
+    /// NSWindowLevel values can be found [here](https://developer.apple.com/documentation/appkit/NSWindowLevel?language=objc).
     /// This is only available on macOS.
     #[cfg(target_os = "macos")]
-    fn set_window_level(&self, level: u32) -> Result<&WebviewWindow, Error> {
+    fn set_window_level(&self, level: NSWindowLevel) -> Result<&WebviewWindow, Error> {
         ensure_main_thread(self, move |win| {
             let ns_win = win.ns_window()? as cocoa::base::id;
             unsafe {
@@ -146,21 +195,36 @@ impl<'a> WebviewWindowExt for WebviewWindow {
     }
 }
 
+#[cfg(target_os = "macos")]
+struct TrafficLightsInsetsState(Arc<RwLock<HashMap<String, LogicalPosition<f64>>>>);
+
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
-    Builder::new("decorum")
+    let mut builder = Builder::new("decorum")
         .invoke_handler(tauri::generate_handler![commands::show_snap_overlay])
+        .setup(move |app, _api| {
+            #[cfg(target_os = "macos")]
+            app.manage(TrafficLightsInsetsState(Arc::new(RwLock::new(
+                HashMap::new(),
+            ))));
+
+            Ok(())
+        })
         .on_page_load(|win, _payload: &tauri::webview::PageLoadPayload| {
             match win.emit("decorum-page-load", ()) {
                 Ok(_) => {}
                 Err(e) => println!("decorum error: {:?}", e),
             }
-        })
-        .on_window_ready(|_win| {
-            #[cfg(target_os = "macos")]
-            traffic::setup_traffic_light_positioner(_win);
-            return;
-        })
-        .build()
+        });
+
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder.on_window_ready(|window| {
+            // TODO: Only setup if the inset is defined in the config.
+            nswindow_delegates::setup(window);
+        });
+    }
+
+    builder.build()
 }
 
 #[cfg(target_os = "macos")]

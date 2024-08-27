@@ -1,75 +1,44 @@
-// Most contents of this file are taken from Hoppscotch's tauri app.
-// I think there is work to be done to improve it, but I'm happy with it for now.
-// Reference source code is linked below.
-// https://github.com/hoppscotch/hoppscotch/blob/286fcd2bb08a84f027b10308d1e18da368f95ebf/packages/hoppscotch-selfhost-desktop/src-tauri/src/mac/window.rs
-
+///
+/// Credit to @haasal, @charrondev and Hoppscotch
+/// This is also similar to how it is implemented in Zed.dev editor
+///
+/// https://github.com/haasal
+/// https://gist.github.com/charrondev
+/// https://github.com/hoppscotch/hoppscotch
+/// https://github.com/clearlysid/tauri-plugin-decorum/
+/// (Issue) https://github.com/tauri-apps/tauri/issues/4789
+/// (Gist) https://gist.github.com/charrondev/43150e940bd2771b1ea88256d491c7a9
+/// (Hoppscotch) https://github.com/hoppscotch/hoppscotch/blob/286fcd2bb08a84f027b10308d1e18da368f95ebf/packages/hoppscotch-selfhost-desktop/src-tauri/src/mac/window.rs
+///
 use objc::{msg_send, sel, sel_impl};
 use rand::{distributions::Alphanumeric, Rng};
 use tauri::{Emitter, Runtime, Window};
-
-const WINDOW_CONTROL_PAD_X: f64 = 12.0;
-const WINDOW_CONTROL_PAD_Y: f64 = 16.0;
 
 pub struct UnsafeWindowHandle(pub *mut std::ffi::c_void);
 unsafe impl Send for UnsafeWindowHandle {}
 unsafe impl Sync for UnsafeWindowHandle {}
 
-#[cfg(target_os = "macos")]
-pub fn position_traffic_lights(ns_window_handle: UnsafeWindowHandle, x: f64, y: f64) {
-    use cocoa::appkit::{NSView, NSWindow, NSWindowButton};
-    use cocoa::foundation::NSRect;
-    let ns_window = ns_window_handle.0 as cocoa::base::id;
-    unsafe {
-        let close = ns_window.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
-        let miniaturize =
-            ns_window.standardWindowButton_(NSWindowButton::NSWindowMiniaturizeButton);
-        let zoom = ns_window.standardWindowButton_(NSWindowButton::NSWindowZoomButton);
-
-        let title_bar_container_view = close.superview().superview();
-
-        let close_rect: NSRect = msg_send![close, frame];
-        let button_height = close_rect.size.height;
-
-        let title_bar_frame_height = button_height + y;
-        let mut title_bar_rect = NSView::frame(title_bar_container_view);
-        title_bar_rect.size.height = title_bar_frame_height;
-        title_bar_rect.origin.y = NSView::frame(ns_window).size.height - title_bar_frame_height;
-        let _: () = msg_send![title_bar_container_view, setFrame: title_bar_rect];
-
-        let window_buttons = vec![close, miniaturize, zoom];
-        let space_between = 20.0; // Fixed space between buttons
-        let vertical_offset = 4.0; // Adjust this value to push buttons down
-
-        for (i, button) in window_buttons.into_iter().enumerate() {
-            let mut rect: NSRect = NSView::frame(button);
-            rect.origin.x = x + (i as f64 * space_between);
-            // Adjust vertical positioning
-            rect.origin.y = ((title_bar_frame_height - button_height) / 2.0) - vertical_offset;
-            button.setFrameOrigin(rect.origin);
-        }
-    }
-}
-
-#[cfg(target_os = "macos")]
 #[derive(Debug)]
 struct WindowState<R: Runtime> {
     window: Window<R>,
 }
 
-#[cfg(target_os = "macos")]
-pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
+pub fn setup<R: Runtime>(window: Window<R>) {
     use cocoa::appkit::NSWindow;
     use cocoa::base::{id, BOOL};
     use cocoa::foundation::NSUInteger;
     use objc::runtime::{Object, Sel};
     use std::ffi::c_void;
 
+    use crate::macos::update_traffic_lights_inset;
+
     // Do the initial positioning
-    position_traffic_lights(
-        UnsafeWindowHandle(window.ns_window().expect("Failed to create window handle")),
-        WINDOW_CONTROL_PAD_X,
-        WINDOW_CONTROL_PAD_Y,
-    );
+    // position_traffic_lights(
+    //     UnsafeWindowHandle(window.ns_window().expect("Failed to create window handle")),
+    //     WINDOW_CONTROL_PAD_X,
+    //     WINDOW_CONTROL_PAD_Y,
+    // );
+    // update_traffic_lights_inset(&window);
 
     // Ensure they stay in place while resizing the window.
     fn with_window_state<R: Runtime, F: FnOnce(&mut WindowState<R>) -> T, T>(
@@ -106,18 +75,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
         extern "C" fn on_window_did_resize<R: Runtime>(this: &Object, _cmd: Sel, notification: id) {
             unsafe {
                 with_window_state(&*this, |state: &mut WindowState<R>| {
-                    let id = state
-                        .window
-                        .ns_window()
-                        .expect("NS window should exist on state to handle resize")
-                        as id;
-
-                    #[cfg(target_os = "macos")]
-                    position_traffic_lights(
-                        UnsafeWindowHandle(id as *mut std::ffi::c_void),
-                        WINDOW_CONTROL_PAD_X,
-                        WINDOW_CONTROL_PAD_Y,
-                    );
+                    update_traffic_lights_inset(&state.window);
                 });
 
                 let super_del: id = *this.get_ivar("super_delegate");
@@ -243,12 +201,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                         .emit("did-exit-fullscreen", ())
                         .expect("Failed to emit event");
 
-                    let id = state.window.ns_window().expect("Failed to emit event") as id;
-                    position_traffic_lights(
-                        UnsafeWindowHandle(id as *mut std::ffi::c_void),
-                        WINDOW_CONTROL_PAD_X,
-                        WINDOW_CONTROL_PAD_Y,
-                    );
+                    update_traffic_lights_inset(&state.window);
                 });
 
                 let super_del: id = *this.get_ivar("super_delegate");
