@@ -24,5 +24,9 @@ objc = "0.2"
 [target.'cfg(target_os = "windows")'.dependencies]
 enigo = "0.1.3"
 
+[target.'cfg(target_os = "linux")'.dependencies]
+dconf_rs = "0.3.0"
+linicon = "2.3.0"
+
 [build-dependencies]
 tauri-plugin = { version = "2.0.0-rc", features = ["build"] }
