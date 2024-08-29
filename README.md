@@ -32,6 +32,7 @@ You'll need to set these for your window in `src-tauri/capabilities/default.json
 "core:window:allow-start-dragging",
 "core:window:allow-toggle-maximize",
 "decorum:allow-show-snap-overlay",
+"decorum:allow-set-window-buttons-inset",
 ```
 
 And ensure the `withGlobalTauri` in your `tauri.conf.json` is set to `true`.
@@ -44,7 +45,7 @@ And ensure the `withGlobalTauri` in your `tauri.conf.json` is set to `true`.
 ```rust
 use tauri::Manager;
 
-use tauri_plugin_decorum::WebviewWindowExt; // adds helper methods to WebviewWindow
+use tauri_plugin_decorum::{WebviewWindowExt, NSWindowLevel};
 
 fn main() {
 	tauri::Builder::default()
@@ -58,15 +59,20 @@ fn main() {
 
 			// Some macOS-specific helpers
 			#[cfg(target_os = "macos")] {
-				// Set a custom inset to the traffic lights
-				main_window.set_traffic_lights_inset(12.0, 16.0).unwrap();
-
-				// Make window transparent without privateApi
-				main_window.make_transparent().unwrap()
-
+				use tauri_plugin_decorum::NSWindowLevel;
+				
 				// Set window level
 				// NSWindowLevel: https://developer.apple.com/documentation/appkit/nswindowlevel
-				main_window.set_window_level(25).unwrap()
+				let _ = main_window.set_window_level(NSWindowLevel::NSStatusWindowLevel);
+
+				// Set a custom inset to the traffic lights
+				let _ = main_window.set_window_buttons_inset(Some(LogicalPosition::new(12.0, 16.0)));
+
+				// Applies transparency to the webview.
+				// Note that this still uses internal/private APIs.
+				// This differs from Tauri's implementation as it doesn't make the window itself transparent
+				// Allowing for shadows to be enabled without artifacts or large performance hits.
+				let _ = main_window.apply_transparency();
 			}
 
 			Ok(())

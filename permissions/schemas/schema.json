@@ -295,20 +295,6 @@
       "type": "string",
       "oneOf": [
         {
-          "description": "allow-set-window-buttons-inset -> Enables the set-window-buttons-inset command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "allow-set-window-buttons-inset"
-          ]
-        },
-        {
-          "description": "deny-set-window-buttons-inset -> Denies the set-window-buttons-inset command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "deny-set-window-buttons-inset"
-          ]
-        },
-        {
           "description": "allow-set-window-buttons-inset -> Enables the set_window_buttons_inset command without any pre-configured scope.",
           "type": "string",
           "enum": [

@@ -16,10 +16,14 @@ fn main() {
 
             #[cfg(target_os = "macos")]
             {
+                use tauri_plugin_decorum::NSWindowLevel;
+
                 let _ = main_window.make_transparent();
                 let _ = main_window.create_overlay_titlebar();
                 let _ =
                     main_window.set_window_buttons_inset(Some(LogicalPosition::new(15.0, 25.0)));
+
+                let _ = main_window.set_window_level(NSWindowLevel::NSStatusWindowLevel);
             }
 
             Ok(())
