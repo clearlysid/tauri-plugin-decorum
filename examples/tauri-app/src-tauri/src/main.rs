@@ -21,9 +21,9 @@ fn main() {
                 let _ = main_window.make_transparent();
                 let _ = main_window.create_overlay_titlebar();
                 let _ =
-                    main_window.set_window_buttons_inset(Some(LogicalPosition::new(15.0, 25.0)));
+                    main_window.set_window_buttons_inset(Some(LogicalPosition::new(15.0, 20.0)));
 
-                let _ = main_window.set_window_level(NSWindowLevel::NSStatusWindowLevel);
+                let _ = main_window.set_window_level(NSWindowLevel::NSNormalWindowLevel);
             }
 
             Ok(())

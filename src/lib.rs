@@ -27,21 +27,17 @@ pub enum NSWindowLevel {
 }
 
 #[cfg(target_os = "macos")]
-impl From<String> for NSWindowLevel {
-    fn from(s: String) -> Self {
-        match s.as_str() {
-            "NSNormalWindowLevel" => NSWindowLevel::NSNormalWindowLevel,
-            "NSFloatingWindowLevel" => NSWindowLevel::NSFloatingOrSubmenuOrTornOffMenuWindowLevel,
-            "NSSubmenuWindowLevel" => NSWindowLevel::NSFloatingOrSubmenuOrTornOffMenuWindowLevel,
-            "NSTornOffMenuWindowLevel" => {
-                NSWindowLevel::NSFloatingOrSubmenuOrTornOffMenuWindowLevel
-            }
-            "NSMainMenuWindowLevel" => NSWindowLevel::NSMainMenuWindowLevel,
-            "NSStatusWindowLevel" => NSWindowLevel::NSStatusWindowLevel,
-            "NSModalPanelWindowLevel" => NSWindowLevel::NSModalPanelWindowLevel,
-            "NSPopUpMenuWindowLevel" => NSWindowLevel::NSPopUpMenuWindowLevel,
-            "NSScreenSaverWindowLevel" => NSWindowLevel::NSScreenSaverWindowLevel,
-            _ => panic!("Unknown NSWindowLevel string: {}", s),
+impl From<u32> for NSWindowLevel {
+    fn from(n: u32) -> Self {
+        match n {
+            0 => NSWindowLevel::NSNormalWindowLevel,
+            3 => NSWindowLevel::NSFloatingOrSubmenuOrTornOffMenuWindowLevel,
+            8 => NSWindowLevel::NSModalPanelWindowLevel,
+            24 => NSWindowLevel::NSMainMenuWindowLevel,
+            25 => NSWindowLevel::NSStatusWindowLevel,
+            101 => NSWindowLevel::NSPopUpMenuWindowLevel,
+            1000 => NSWindowLevel::NSScreenSaverWindowLevel,
+            _ => NSWindowLevel::NSNormalWindowLevel,
         }
     }
 }
@@ -188,7 +184,7 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
         ensure_main_thread(self, move |win| {
             let inset = inset_option.unwrap_or(macos::DEFAULT_TRAFFIC_LIGHTS_INSET);
 
-            macos::draw_window_controls(
+            macos::position_window_controls(
                 macos::nswindow_delegates::UnsafeWindowHandle(
                     win.ns_window().expect("Failed to create window handle"),
                 ),

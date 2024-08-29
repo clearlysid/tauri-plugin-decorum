@@ -1,3 +1,4 @@
+use cocoa::appkit::NSToolbar;
 use nswindow_delegates::UnsafeWindowHandle;
 use tauri::{LogicalPosition, Manager, Runtime, Window};
 
@@ -14,7 +15,7 @@ pub fn update_window_controls_inset<R: Runtime>(window: &Window<R>) {
         if let Some(inset_option) = map.get(&window.label().to_string()) {
             let inset = inset_option.unwrap_or(DEFAULT_TRAFFIC_LIGHTS_INSET);
 
-            draw_window_controls(
+            position_window_controls(
                 UnsafeWindowHandle(window.ns_window().expect("Failed to create window handle")),
                 inset.x,
                 inset.y,
@@ -23,11 +24,16 @@ pub fn update_window_controls_inset<R: Runtime>(window: &Window<R>) {
     }
 }
 
-pub fn draw_window_controls(ns_window_handle: UnsafeWindowHandle, x: f64, y: f64) {
-    use cocoa::appkit::{NSView, NSWindow, NSWindowButton};
-    use cocoa::foundation::NSRect;
+// TODO: Respect RTL display language
+// https://developer.apple.com/documentation/appkit/nsapplication/1428556-userinterfacelayoutdirection?language=objc
+pub fn position_window_controls(ns_window_handle: UnsafeWindowHandle, x: f64, y: f64) {
+    use cocoa::{
+        appkit::{NSView, NSWindow, NSWindowButton},
+        base::id,
+        foundation::NSRect,
+    };
 
-    let ns_window = ns_window_handle.0 as cocoa::base::id;
+    let ns_window = ns_window_handle.0 as id;
     unsafe {
         let close = ns_window.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
         let minimize = ns_window.standardWindowButton_(NSWindowButton::NSWindowMiniaturizeButton);
