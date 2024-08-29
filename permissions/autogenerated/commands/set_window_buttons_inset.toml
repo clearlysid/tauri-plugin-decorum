@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-set-window-buttons-inset"
+description = "Enables the set_window_buttons_inset command without any pre-configured scope."
+commands.allow = ["set_window_buttons_inset"]
+
+[[permission]]
+identifier = "deny-set-window-buttons-inset"
+description = "Denies the set_window_buttons_inset command without any pre-configured scope."
+commands.deny = ["set_window_buttons_inset"]

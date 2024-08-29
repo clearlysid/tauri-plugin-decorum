@@ -1,6 +1,5 @@
 ///
-/// Credit to @haasal, @charrondev and Hoppscotch
-/// This is also similar to how it is implemented in Zed.dev editor
+/// Credit to @haasal, @charrondev, Hoppscotch app, Electron, Zed Editor
 ///
 /// https://github.com/haasal
 /// https://gist.github.com/charrondev
@@ -9,6 +8,7 @@
 /// (Issue) https://github.com/tauri-apps/tauri/issues/4789
 /// (Gist) https://gist.github.com/charrondev/43150e940bd2771b1ea88256d491c7a9
 /// (Hoppscotch) https://github.com/hoppscotch/hoppscotch/blob/286fcd2bb08a84f027b10308d1e18da368f95ebf/packages/hoppscotch-selfhost-desktop/src-tauri/src/mac/window.rs
+/// (Electron) https://github.com/electron/electron/blob/38512efd25a159ddc64a54c22ef9eb6dd60064ec/shell/browser/native_window_mac.mm#L1454
 ///
 use objc::{msg_send, sel, sel_impl};
 use rand::{distributions::Alphanumeric, Rng};
@@ -30,15 +30,10 @@ pub fn setup<R: Runtime>(window: Window<R>) {
     use objc::runtime::{Object, Sel};
     use std::ffi::c_void;
 
-    use crate::macos::update_traffic_lights_inset;
+    use crate::macos::update_window_controls_inset;
 
     // Do the initial positioning
-    // position_traffic_lights(
-    //     UnsafeWindowHandle(window.ns_window().expect("Failed to create window handle")),
-    //     WINDOW_CONTROL_PAD_X,
-    //     WINDOW_CONTROL_PAD_Y,
-    // );
-    // update_traffic_lights_inset(&window);
+    update_window_controls_inset(&window);
 
     // Ensure they stay in place while resizing the window.
     fn with_window_state<R: Runtime, F: FnOnce(&mut WindowState<R>) -> T, T>(
@@ -75,7 +70,7 @@ pub fn setup<R: Runtime>(window: Window<R>) {
         extern "C" fn on_window_did_resize<R: Runtime>(this: &Object, _cmd: Sel, notification: id) {
             unsafe {
                 with_window_state(&*this, |state: &mut WindowState<R>| {
-                    update_traffic_lights_inset(&state.window);
+                    update_window_controls_inset(&state.window);
                 });
 
                 let super_del: id = *this.get_ivar("super_delegate");
@@ -201,7 +196,7 @@ pub fn setup<R: Runtime>(window: Window<R>) {
                         .emit("did-exit-fullscreen", ())
                         .expect("Failed to emit event");
 
-                    update_traffic_lights_inset(&state.window);
+                    update_window_controls_inset(&state.window);
                 });
 
                 let super_del: id = *this.get_ivar("super_delegate");
@@ -259,7 +254,6 @@ pub fn setup<R: Runtime>(window: Window<R>) {
             }
         }
 
-        // Are we deallocing this properly ? (I miss safe Rust :(  )
         let window_label = window.label().to_string();
 
         let app_state = WindowState { window };
@@ -272,7 +266,7 @@ pub fn setup<R: Runtime>(window: Window<R>) {
 
         // We need to ensure we have a unique delegate name, otherwise we will panic while trying to create a duplicate
         // delegate with the same name.
-        let delegate_name = format!("windowDelegate_{}_{}", window_label, random_str);
+        let delegate_name = format!("windowDelegate_decorum_{}_{}", window_label, random_str);
 
         ns_win.setDelegate_(cocoa::delegate!(&delegate_name, {
             window: id = ns_win,

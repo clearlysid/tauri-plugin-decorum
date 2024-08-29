@@ -12,10 +12,16 @@ fn main() {
             // On Windows this will hide decoration and render custom window controls
             // On macOS it expects a hiddenTitle: true and titleBarStyle: overlay
             let main_window = app.get_webview_window("main").unwrap();
-            main_window.create_overlay_titlebar().unwrap();
+            // main_window.create_overlay_titlebar().unwrap();
 
             #[cfg(target_os = "macos")]
-            let _ = main_window.set_traffic_lights_inset(Some(LogicalPosition::new(16.0, 20.0)));
+            {
+                let _ = main_window.make_transparent();
+                let _ = main_window.create_overlay_titlebar();
+                let _ =
+                    main_window.set_window_buttons_inset(Some(LogicalPosition::new(15.0, 25.0)));
+            }
+
             Ok(())
         })
         .run(tauri::generate_context!())

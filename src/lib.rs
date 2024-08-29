@@ -2,9 +2,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use macos::nswindow_delegates;
-use parking_lot::RwLock;
 use tauri::plugin::{Builder, TauriPlugin};
-use tauri::{Emitter, Error, Listener, LogicalPosition, Manager, Runtime, WebviewWindow};
+use tauri::{Emitter, Listener, LogicalPosition, Manager, Runtime, WebviewWindow};
 
 #[cfg(target_os = "macos")]
 #[macro_use]
@@ -15,6 +14,7 @@ mod commands;
 #[cfg(target_os = "macos")]
 mod macos;
 
+#[cfg(target_os = "macos")]
 #[repr(u32)]
 pub enum NSWindowLevel {
     NSNormalWindowLevel = 0,
@@ -26,6 +26,7 @@ pub enum NSWindowLevel {
     NSScreenSaverWindowLevel = 1000,
 }
 
+#[cfg(target_os = "macos")]
 impl From<String> for NSWindowLevel {
     fn from(s: String) -> Self {
         match s.as_str() {
@@ -47,23 +48,23 @@ impl From<String> for NSWindowLevel {
 
 /// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the decorum APIs.
 pub trait WebviewWindowExt {
-    fn create_overlay_titlebar(&self) -> Result<&WebviewWindow, Error>;
+    fn create_overlay_titlebar(&self) -> tauri::Result<()>;
+
     #[cfg(target_os = "macos")]
-    fn set_traffic_lights_inset(
-        &self,
-        inset: Option<LogicalPosition<f64>>,
-    ) -> Result<&WebviewWindow, Error>;
+    fn set_window_buttons_inset(&self, options: Option<LogicalPosition<f64>>) -> tauri::Result<()>;
+
     #[cfg(target_os = "macos")]
-    fn make_transparent(&self) -> Result<&WebviewWindow, Error>;
+    fn make_transparent(&self) -> tauri::Result<()>;
+
     #[cfg(target_os = "macos")]
-    fn set_window_level(&self, level: NSWindowLevel) -> Result<&WebviewWindow, Error>;
+    fn set_window_level(&self, level: NSWindowLevel) -> tauri::Result<()>;
 }
 
-impl<'a> WebviewWindowExt for WebviewWindow {
+impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
     /// Create a custom titlebar overlay.
     /// This will remove the default titlebar and create a draggable area for the titlebar.
     /// On Windows, it will also create custom window controls.
-    fn create_overlay_titlebar(&self) -> Result<&WebviewWindow, Error> {
+    fn create_overlay_titlebar(&self) -> tauri::Result<()> {
         #[cfg(target_os = "windows")]
         self.set_decorations(false)?;
 
@@ -119,50 +120,14 @@ impl<'a> WebviewWindowExt for WebviewWindow {
             }
         });
 
-        Ok(self)
-    }
-
-    /// Set the inset of the traffic lights.
-    /// This will move the traffic lights to the specified position.
-    /// This is only available on macOS.
-    #[cfg(target_os = "macos")]
-    fn set_traffic_lights_inset(
-        &self,
-        inset: Option<LogicalPosition<f64>>,
-    ) -> Result<&WebviewWindow, Error> {
-        let insets_state = &self.state::<TrafficLightsInsetsState>();
-        let mut insets_map = insets_state.0.write();
-
-        let window_label = self.label().to_string();
-
-        match inset {
-            Some(inset) => {
-                if insets_map.insert(window_label, inset.clone()).is_none() {
-                    self.on_window_event(move |event| match event {
-                        tauri::WindowEvent::ThemeChanged(_) => {
-                            // TODO: Update
-                        }
-                        _ => (),
-                    });
-                }
-
-                ensure_main_thread(self, move |win| {
-                    // macos::update_traffic_lights_inset(win);
-                    Ok(win)
-                })
-            }
-            None => {
-                insets_map.remove(&window_label);
-                Ok(self)
-            }
-        }
+        Ok(())
     }
 
     /// Set the window background to transparent.
     /// This helper function is different from Tauri's default
     /// as it doesn't use the `transparent` flag or macOS Private APIs.
     #[cfg(target_os = "macos")]
-    fn make_transparent(&self) -> Result<&WebviewWindow, Error> {
+    fn make_transparent(&self) -> tauri::Result<()> {
         use cocoa::{
             base::{id, nil},
             foundation::NSString,
@@ -176,36 +141,95 @@ impl<'a> WebviewWindowExt for WebviewWindow {
                 msg_send![id, setValue:no forKey: NSString::alloc(nil).init_str("drawsBackground")];
         })?;
 
-        Ok(self)
+        Ok(())
     }
 
-    /// Set the window level.
+    /// Set the inset of the traffic lights.
+    /// This will move the traffic lights to the specified position.
+    /// This is only available on macOS.
+    /// TODO: Also Implement for Windows 11 (>=22H2)
+    #[cfg(target_os = "macos")]
+    fn set_window_buttons_inset(
+        &self,
+        inset_option: Option<LogicalPosition<f64>>,
+    ) -> tauri::Result<()> {
+        let styles_state = &self.state::<WindowButtonsInsetsState>();
+        let mut styles_map = styles_state.0.write();
+
+        let window_label = self.label().to_string();
+
+        match inset_option {
+            Some(inset) => {
+                if styles_map
+                    .insert(window_label, Some(inset.clone()))
+                    .is_none()
+                {
+                    let c_insets_map = styles_map.clone();
+                    let c_win = self.clone();
+
+                    self.on_window_event(move |event| match event {
+                        tauri::WindowEvent::ThemeChanged(..) => {
+                            if c_insets_map.contains_key(c_win.label()) {
+                                let _ = ensure_main_thread(&c_win, move |win| {
+                                    macos::update_window_controls_inset(&win.as_ref().window());
+                                    Ok(())
+                                });
+                            }
+                        }
+                        _ => (),
+                    });
+                }
+            }
+            None => {
+                styles_map.remove(&window_label);
+            }
+        }
+
+        ensure_main_thread(self, move |win| {
+            let inset = inset_option.unwrap_or(macos::DEFAULT_TRAFFIC_LIGHTS_INSET);
+
+            macos::draw_window_controls(
+                macos::nswindow_delegates::UnsafeWindowHandle(
+                    win.ns_window().expect("Failed to create window handle"),
+                ),
+                inset.x,
+                inset.y,
+            );
+
+            Ok(())
+        })
+    }
+
+    /// Set the window level.   
     /// This will set the window level to the specified value.
     /// NSWindowLevel values can be found [here](https://developer.apple.com/documentation/appkit/NSWindowLevel?language=objc).
     /// This is only available on macOS.
     #[cfg(target_os = "macos")]
-    fn set_window_level(&self, level: NSWindowLevel) -> Result<&WebviewWindow, Error> {
-        ensure_main_thread(self, move |win| {
+    fn set_window_level(&self, level: NSWindowLevel) -> tauri::Result<()> {
+        ensure_main_thread(self, move |win| unsafe {
             let ns_win = win.ns_window()? as cocoa::base::id;
-            unsafe {
-                let _: () = msg_send![ns_win, setLevel: level];
-            }
-            Ok(win)
+            let _: () = msg_send![ns_win, setLevel: level];
+            Ok(())
         })
     }
 }
 
-#[cfg(target_os = "macos")]
-struct TrafficLightsInsetsState(Arc<RwLock<HashMap<String, LogicalPosition<f64>>>>);
+#[cfg(not(target_os = "linux"))]
+struct WindowButtonsInsetsState(
+    Arc<parking_lot::RwLock<HashMap<String, Option<LogicalPosition<f64>>>>>,
+);
 
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     let mut builder = Builder::new("decorum")
-        .invoke_handler(tauri::generate_handler![commands::show_snap_overlay])
+        .invoke_handler(tauri::generate_handler![
+            commands::set_window_buttons_inset,
+            commands::show_snap_overlay,
+        ])
         .setup(move |app, _api| {
-            #[cfg(target_os = "macos")]
-            app.manage(TrafficLightsInsetsState(Arc::new(RwLock::new(
-                HashMap::new(),
-            ))));
+            #[cfg(not(target_os = "linux"))]
+            app.manage(WindowButtonsInsetsState(Arc::new(
+                parking_lot::RwLock::new(HashMap::new()),
+            )));
 
             Ok(())
         })
@@ -228,32 +252,18 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
 }
 
 #[cfg(target_os = "macos")]
-fn is_main_thread() -> bool {
-    std::thread::current().name() == Some("main")
-}
-
-#[cfg(target_os = "macos")]
-fn ensure_main_thread<F>(
-    win: &WebviewWindow,
+pub(crate) fn ensure_main_thread<F, R: Runtime>(
+    win: &WebviewWindow<R>,
     main_action: F,
-) -> Result<&WebviewWindow, tauri::Error>
+) -> tauri::Result<()>
 where
-    F: FnOnce(&WebviewWindow) -> Result<&WebviewWindow, Error> + Send + 'static,
+    F: FnOnce(&WebviewWindow<R>) -> tauri::Result<()> + Send + 'static,
 {
-    match is_main_thread() {
-        true => {
-            main_action(win)?;
-            Ok(win)
-        }
+    match std::thread::current().name() == Some("main") {
+        true => main_action(win),
         false => {
-            let win2 = win.clone();
-
-            match win.run_on_main_thread(move || {
-                main_action(&win2).unwrap();
-            }) {
-                Ok(_) => Ok(win),
-                Err(e) => Err(e),
-            }
+            let c_win = win.clone();
+            win.run_on_main_thread(move || main_action(&c_win).unwrap())
         }
     }
 }

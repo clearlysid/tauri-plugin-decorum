@@ -1,4 +1,6 @@
-use tauri;
+use tauri::{LogicalPosition, Manager, Result, Runtime, WebviewWindow};
+
+use crate::WebviewWindowExt;
 
 #[tauri::command]
 pub async fn show_snap_overlay() {
@@ -18,4 +20,26 @@ pub async fn show_snap_overlay() {
         // Press Alt to hide the ugly numbers
         enigo.key_click(Key::Alt);
     }
+}
+
+#[tauri::command]
+pub async fn set_window_buttons_inset<R: Runtime>(
+    window: WebviewWindow<R>,
+    inset: Option<LogicalPosition<f64>>,
+    target_label: Option<String>,
+) -> Result<()> {
+    #[cfg(target_os = "macos")]
+    {
+        let target = match target_label {
+            Some(label) => window
+                .get_webview_window(&label)
+                .ok_or_else(|| tauri::Error::WindowNotFound)?,
+            None => window,
+        };
+
+        target.set_window_buttons_inset(inset)
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    "This command is only supported on macOS."
 }
