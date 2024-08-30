@@ -76,8 +76,6 @@ fn main() {
 }
 ```
 
-
-
 ### custom buttons with css:
 
 If you want to style the window controls yourself, you can use one of the following class-names to do so:
