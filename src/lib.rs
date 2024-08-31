@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use macos::nswindow_delegates;
 use tauri::plugin::{Builder, TauriPlugin};
-use tauri::{Emitter, Listener, LogicalPosition, Manager, Runtime, WebviewWindow};
+use tauri::{Emitter, Listener, LogicalPosition, Manager, Result, Runtime, WebviewWindow};
 
 #[cfg(target_os = "macos")]
 #[macro_use]
@@ -44,23 +43,26 @@ impl From<u32> for NSWindowLevel {
 
 /// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the decorum APIs.
 pub trait WebviewWindowExt {
-    fn create_overlay_titlebar(&self) -> tauri::Result<()>;
+    fn create_overlay_titlebar(&self) -> Result<()>;
 
     #[cfg(target_os = "macos")]
-    fn set_window_buttons_inset(&self, options: Option<LogicalPosition<f64>>) -> tauri::Result<()>;
+    fn set_window_buttons_inset(&self, options: Option<LogicalPosition<f64>>) -> Result<()>;
 
     #[cfg(target_os = "macos")]
-    fn make_transparent(&self) -> tauri::Result<()>;
+    fn make_transparent(&self) -> Result<()>;
 
     #[cfg(target_os = "macos")]
-    fn set_window_level(&self, level: NSWindowLevel) -> tauri::Result<()>;
+    fn set_window_level(&self, level: NSWindowLevel) -> Result<()>;
 }
 
 impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
     /// Create a custom titlebar overlay.
     /// This will remove the default titlebar and create a draggable area for the titlebar.
-    /// On Windows, it will also create custom window controls.
-    fn create_overlay_titlebar(&self) -> tauri::Result<()> {
+    ///
+    /// ## Platform-specific:
+    ///
+    /// - **Windows:** On Windows, it will also create custom window controls.
+    fn create_overlay_titlebar(&self) -> Result<()> {
         #[cfg(target_os = "windows")]
         self.set_decorations(false)?;
 
@@ -119,36 +121,14 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
         Ok(())
     }
 
-    /// Set the window background to transparent.
-    /// This helper function is different from Tauri's default
-    /// as it doesn't use the `transparent` flag or macOS Private APIs.
+    /// Sets the window controls (Traffic lights) inset
+    ///
+    /// ## Platform-specific:
+    ///
+    /// - **macOS:** Only supported on macOS.
+    // TODO: Also Implement for Windows 11 (>=22H2)
     #[cfg(target_os = "macos")]
-    fn make_transparent(&self) -> tauri::Result<()> {
-        use cocoa::{
-            base::{id, nil},
-            foundation::NSString,
-        };
-
-        // Make webview background transparent
-        self.with_webview(|webview| unsafe {
-            let id = webview.inner();
-            let no: id = msg_send![class!(NSNumber), numberWithBool:0];
-            let _: id =
-                msg_send![id, setValue:no forKey: NSString::alloc(nil).init_str("drawsBackground")];
-        })?;
-
-        Ok(())
-    }
-
-    /// Set the inset of the traffic lights.
-    /// This will move the traffic lights to the specified position.
-    /// This is only available on macOS.
-    /// TODO: Also Implement for Windows 11 (>=22H2)
-    #[cfg(target_os = "macos")]
-    fn set_window_buttons_inset(
-        &self,
-        inset_option: Option<LogicalPosition<f64>>,
-    ) -> tauri::Result<()> {
+    fn set_window_buttons_inset(&self, inset_option: Option<LogicalPosition<f64>>) -> Result<()> {
         let styles_state = &self.state::<WindowButtonsInsetsState>();
         let mut styles_map = styles_state.0.write();
 
@@ -196,12 +176,43 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
         })
     }
 
+    /// Makes the background of the WKWebView layer transparent.
+    /// This differs from Tauri's implementation as it does not change the window background which causes performance performance issues and artifacts when shadows are enabled on the window.
+    /// Use Tauri's implementation to make the window itself transparent.
+    ///
+    /// ## Platform-specific:
+    ///
+    /// - **macOS:** Only supported on macOS.
+    /// This is a private API on macOS, so you cannot use this if your application will be published on the App Store.
+    #[cfg(target_os = "macos")]
+    fn make_transparent(&self) -> Result<()> {
+        use cocoa::{
+            base::{id, nil},
+            foundation::NSString,
+        };
+
+        self.with_webview(|webview| unsafe {
+            let wkwebview = webview.inner();
+            // `NO` is disallowed, use [NSNumber numberWithBool:NO]
+            let no: id = msg_send![class!(NSNumber), numberWithBool:0];
+            // Deprecated since OS X 10.14
+            // [https://developer.apple.com/documentation/webkit/webview/1408486-drawsbackground]
+            let _: id =
+                msg_send![wkwebview, setValue:no forKey: NSString::alloc(nil).init_str("drawsBackground")];
+        })?;
+
+        Ok(())
+    }
+
     /// Set the window level.   
     /// This will set the window level to the specified value.
-    /// NSWindowLevel values can be found [here](https://developer.apple.com/documentation/appkit/NSWindowLevel?language=objc).
-    /// This is only available on macOS.
+    /// NSWindowLevel values can be found [here](https://developer.apple.com/documentation/appkit/NSWindowLevel).
+    ///
+    /// ## Platform-specific:
+    ///
+    /// - **macOS:** Only supported on macOS.
     #[cfg(target_os = "macos")]
-    fn set_window_level(&self, level: NSWindowLevel) -> tauri::Result<()> {
+    fn set_window_level(&self, level: NSWindowLevel) -> Result<()> {
         ensure_main_thread(self, move |win| unsafe {
             let ns_win = win.ns_window()? as cocoa::base::id;
             let _: () = msg_send![ns_win, setLevel: level];
@@ -210,7 +221,7 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
     }
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 struct WindowButtonsInsetsState(
     Arc<parking_lot::RwLock<HashMap<String, Option<LogicalPosition<f64>>>>>,
 );
@@ -222,7 +233,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::show_snap_overlay,
         ])
         .setup(move |app, _api| {
-            #[cfg(not(target_os = "linux"))]
+            #[cfg(any(target_os = "macos", target_os = "windows"))]
             app.manage(WindowButtonsInsetsState(Arc::new(
                 parking_lot::RwLock::new(HashMap::new()),
             )));
@@ -240,7 +251,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
     {
         builder = builder.on_window_ready(|window| {
             // TODO: Only setup if the inset is defined in the config.
-            nswindow_delegates::setup(window);
+            macos::nswindow_delegates::setup(window);
         });
     }
 
@@ -251,9 +262,9 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
 pub(crate) fn ensure_main_thread<F, R: Runtime>(
     win: &WebviewWindow<R>,
     main_action: F,
-) -> tauri::Result<()>
+) -> Result<()>
 where
-    F: FnOnce(&WebviewWindow<R>) -> tauri::Result<()> + Send + 'static,
+    F: FnOnce(&WebviewWindow<R>) -> Result<()> + Send + 'static,
 {
     match std::thread::current().name() == Some("main") {
         true => main_action(win),

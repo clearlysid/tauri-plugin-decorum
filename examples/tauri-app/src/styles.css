@@ -91,7 +91,7 @@ button {
 @media (prefers-color-scheme: dark) {
   :root {
     color: #f6f6f6;
-    background-image: linear-gradient(180deg, #350042 0%, #1f003b 100%);
+    /* background-image: linear-gradient(180deg, #350042 0%, #1f003b 100%); */
     background-size: cover;
   }
 
