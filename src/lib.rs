@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use anyhow::anyhow;
 use tauri::plugin::{Builder, TauriPlugin};
-use tauri::{Emitter, Listener, LogicalPosition, Manager, Result, Runtime, WebviewWindow};
+use tauri::{Emitter, Error, Listener, LogicalPosition, Manager, Result, Runtime, WebviewWindow};
 
 #[cfg(target_os = "macos")]
 #[macro_use]
@@ -199,9 +200,7 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
             // [https://developer.apple.com/documentation/webkit/webview/1408486-drawsbackground]
             let _: id =
                 msg_send![wkwebview, setValue:no forKey: NSString::alloc(nil).init_str("drawsBackground")];
-        })?;
-
-        Ok(())
+        })
     }
 
     /// Set the window level.   

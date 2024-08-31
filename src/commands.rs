@@ -1,4 +1,5 @@
-use tauri::{LogicalPosition, Manager, Result, Runtime, WebviewWindow};
+use anyhow::anyhow;
+use tauri::{Error, LogicalPosition, Manager, Result, Runtime, WebviewWindow};
 
 use crate::WebviewWindowExt;
 
@@ -41,5 +42,7 @@ pub async fn set_window_buttons_inset<R: Runtime>(
     }
 
     #[cfg(not(target_os = "macos"))]
-    "This command is only supported on macOS."
+    Err(Error::Anyhow(anyhow!(
+        "This command is only supported on macOS."
+    )))
 }
