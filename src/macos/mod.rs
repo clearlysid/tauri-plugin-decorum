@@ -1,4 +1,3 @@
-use cocoa::appkit::NSToolbar;
 use nswindow_delegates::UnsafeWindowHandle;
 use tauri::{LogicalPosition, Manager, Runtime, Window};
 

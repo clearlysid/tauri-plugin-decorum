@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-///
 /// Configuration for windows in the application.
 ///
 /// Default JSON configuration:
@@ -16,7 +15,7 @@ use serde::{Deserialize, Serialize};
 ///         "hide": []
 ///       },
 ///       "transparentWebViews": true,
-///       "createOverlayTitlebar": true
+///       "createOverlayTitlebar": ["main"]
 ///     }
 ///   ]
 /// }
@@ -24,7 +23,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// # Note:
 /// - "hide" can include "zoom/maximize", "minimize", "close"
-/// - "transparentWebViews" can be a boolean or an array of string, each representing a webview label (e.g., ["main", "other_webview"])
+/// - "transparentWebViews" and "createOverlayTitlebar" can be a boolean or an array of string, each representing a webview label (e.g., ["main", "other_webview"])
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DecorumConfig {
     #[serde(default)]
@@ -38,7 +37,9 @@ pub struct WindowConfig {
     #[serde(default)]
     pub window_buttons: Option<WindowButtons>,
     #[serde(default)]
-    pub create_overlay_titlebar: Option<bool>,
+    pub create_overlay_titlebar: Option<BoolOrVec>,
+    #[serde(default)]
+    pub transparent_webviews: Option<BoolOrVec>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -51,8 +52,6 @@ pub struct WindowButtons {
     pub support_rtl: Option<bool>,
     #[serde(default)]
     pub hide: Option<BoolOrVec>,
-    #[serde(default)]
-    pub transparent_webviews: Option<BoolOrVec>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -67,7 +66,8 @@ impl Default for WindowConfig {
         WindowConfig {
             label: String::new(),
             window_buttons: Some(WindowButtons::default()),
-            create_overlay_titlebar: Some(false),
+            create_overlay_titlebar: Some(BoolOrVec::default()),
+            transparent_webviews: Some(BoolOrVec::default()),
         }
     }
 }
@@ -79,7 +79,6 @@ impl Default for WindowButtons {
             inset_y: Some(15.0),
             support_rtl: Some(false),
             hide: Some(BoolOrVec::default()),
-            transparent_webviews: Some(BoolOrVec::default()),
         }
     }
 }

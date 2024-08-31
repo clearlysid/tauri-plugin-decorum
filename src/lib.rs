@@ -132,18 +132,18 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
     // TODO: Also Implement for Windows 11 (>=22H2)
     #[cfg(target_os = "macos")]
     fn set_window_buttons_inset(&self, inset_option: Option<LogicalPosition<f64>>) -> Result<()> {
-        let styles_state = &self.state::<WindowButtonsInsetsState>();
-        let mut styles_map = styles_state.0.write();
+        let insets_state = &self.state::<WindowButtonsInsetsState>();
+        let mut insets_map = insets_state.0.write();
 
         let window_label = self.label().to_string();
 
         match inset_option {
             Some(inset) => {
-                if styles_map
+                if insets_map
                     .insert(window_label, Some(inset.clone()))
                     .is_none()
                 {
-                    let c_insets_map = styles_map.clone();
+                    let c_insets_map = insets_map.clone();
                     let c_win = self.clone();
 
                     self.on_window_event(move |event| match event {
@@ -160,7 +160,7 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
                 }
             }
             None => {
-                styles_map.remove(&window_label);
+                insets_map.remove(&window_label);
             }
         }
 
@@ -285,6 +285,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R, DecorumConfig> {
             let insets_map = insets_state.0.read();
 
             if let Some(Some(insets)) = insets_map.get(window.label()) {
+                #[cfg(target_os = "macos")]
                 macos::nswindow_delegates::setup(window.clone(), insets.to_owned());
             }
         });
