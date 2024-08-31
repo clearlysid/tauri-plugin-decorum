@@ -1,15 +1,17 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use anyhow::anyhow;
+use config::{DecorumConfig, WindowConfig};
+use parking_lot::RwLock;
 use tauri::plugin::{Builder, TauriPlugin};
-use tauri::{Emitter, Error, Listener, LogicalPosition, Manager, Result, Runtime, WebviewWindow};
+use tauri::{Emitter, Listener, LogicalPosition, Manager, Result, Runtime, WebviewWindow};
 
 #[cfg(target_os = "macos")]
 #[macro_use]
 extern crate objc;
 
 mod commands;
+mod config;
 
 #[cfg(target_os = "macos")]
 mod macos;
@@ -221,21 +223,51 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
 }
 
 #[cfg(any(target_os = "macos", target_os = "windows"))]
-struct WindowButtonsInsetsState(
-    Arc<parking_lot::RwLock<HashMap<String, Option<LogicalPosition<f64>>>>>,
-);
+struct WindowButtonsInsetsState(Arc<RwLock<HashMap<String, Option<LogicalPosition<f64>>>>>);
 
-pub fn init<R: Runtime>() -> TauriPlugin<R> {
-    let mut builder = Builder::new("decorum")
+#[allow(dead_code)]
+struct WindowConfigs(Arc<RwLock<HashMap<String, WindowConfig>>>);
+
+pub fn init<R: Runtime>() -> TauriPlugin<R, DecorumConfig> {
+    let mut builder = Builder::<R, DecorumConfig>::new("decorum")
         .invoke_handler(tauri::generate_handler![
             commands::set_window_buttons_inset,
             commands::show_snap_overlay,
         ])
-        .setup(move |app, _api| {
+        .setup(move |app, api| {
+            let window_configs: HashMap<String, WindowConfig> = api
+                .config()
+                .windows
+                .iter()
+                .map(|win_config| (win_config.label.clone(), win_config.clone()))
+                .collect();
+
+            let c_window_configs = window_configs.clone();
+            app.manage(WindowConfigs(Arc::new(RwLock::new(c_window_configs))));
+
             #[cfg(any(target_os = "macos", target_os = "windows"))]
-            app.manage(WindowButtonsInsetsState(Arc::new(
-                parking_lot::RwLock::new(HashMap::new()),
-            )));
+            {
+                let insets_map = window_configs
+                    .iter()
+                    .filter_map(|(label, config)| {
+                        config.window_buttons.as_ref().and_then(|buttons| {
+                            if buttons.inset_x.is_some() || buttons.inset_y.is_some() {
+                                Some((
+                                    label.clone(),
+                                    Some(LogicalPosition::new(
+                                        buttons.inset_x.unwrap_or_default(),
+                                        buttons.inset_y.unwrap_or_default(),
+                                    )),
+                                ))
+                            } else {
+                                None
+                            }
+                        })
+                    })
+                    .collect();
+
+                app.manage(WindowButtonsInsetsState(Arc::new(RwLock::new(insets_map))));
+            }
 
             Ok(())
         })
@@ -246,11 +278,15 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             }
         });
 
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
     {
         builder = builder.on_window_ready(|window| {
-            // TODO: Only setup if the inset is defined in the config.
-            macos::nswindow_delegates::setup(window);
+            let insets_state = window.state::<WindowButtonsInsetsState>();
+            let insets_map = insets_state.0.read();
+
+            if let Some(Some(insets)) = insets_map.get(window.label()) {
+                macos::nswindow_delegates::setup(window.clone(), insets.to_owned());
+            }
         });
     }
 

@@ -12,7 +12,9 @@
 ///
 use objc::{msg_send, sel, sel_impl};
 use rand::{distributions::Alphanumeric, Rng};
-use tauri::{Emitter, Runtime, Window};
+use tauri::{Emitter, LogicalPosition, Runtime, Window};
+
+use crate::macos::position_window_controls;
 
 pub struct UnsafeWindowHandle(pub *mut std::ffi::c_void);
 unsafe impl Send for UnsafeWindowHandle {}
@@ -23,7 +25,7 @@ struct WindowState<R: Runtime> {
     window: Window<R>,
 }
 
-pub fn setup<R: Runtime>(window: Window<R>) {
+pub fn setup<R: Runtime>(window: Window<R>, initial: LogicalPosition<f64>) {
     use cocoa::appkit::NSWindow;
     use cocoa::base::{id, BOOL};
     use cocoa::foundation::NSUInteger;
@@ -32,8 +34,10 @@ pub fn setup<R: Runtime>(window: Window<R>) {
 
     use crate::macos::update_window_controls_inset;
 
+    let ns_win = window.ns_window().expect("Failed to create window handle");
+
     // Do the initial positioning
-    update_window_controls_inset(&window);
+    position_window_controls(UnsafeWindowHandle(ns_win), initial.x, initial.y);
 
     // Ensure they stay in place while resizing the window.
     fn with_window_state<R: Runtime, F: FnOnce(&mut WindowState<R>) -> T, T>(
@@ -48,12 +52,8 @@ pub fn setup<R: Runtime>(window: Window<R>) {
     }
 
     unsafe {
-        let ns_win = window
-            .ns_window()
-            .expect("NS Window should exist to mount traffic light delegate.")
-            as id;
-
-        let current_delegate: id = ns_win.delegate();
+        let ns_win_id = ns_win as id;
+        let current_delegate: id = ns_win_id.delegate();
 
         extern "C" fn on_window_should_close(this: &Object, _cmd: Sel, sender: id) -> BOOL {
             unsafe {
@@ -268,8 +268,8 @@ pub fn setup<R: Runtime>(window: Window<R>) {
         // delegate with the same name.
         let delegate_name = format!("windowDelegate_decorum_{}_{}", window_label, random_str);
 
-        ns_win.setDelegate_(cocoa::delegate!(&delegate_name, {
-            window: id = ns_win,
+        ns_win_id.setDelegate_(cocoa::delegate!(&delegate_name, {
+            window: id = ns_win_id,
             app_box: *mut c_void = app_box,
             toolbar: id = cocoa::base::nil,
             super_delegate: id = current_delegate,
