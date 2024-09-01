@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use config::{DecorumConfig, WindowConfig};
+use config::DecorumConfig;
 use parking_lot::RwLock;
 use tauri::plugin::{Builder, TauriPlugin};
 use tauri::{Emitter, Listener, LogicalPosition, Manager, Result, Runtime, WebviewWindow};
@@ -225,8 +225,8 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 struct WindowButtonsInsetsState(Arc<RwLock<HashMap<String, Option<LogicalPosition<f64>>>>>);
 
-#[allow(dead_code)]
-struct WindowConfigs(Arc<RwLock<HashMap<String, WindowConfig>>>);
+// #[allow(dead_code)]
+// struct DecorumConfigState(DecorumConfig);
 
 pub fn init<R: Runtime>() -> TauriPlugin<R, DecorumConfig> {
     let mut builder = Builder::<R, DecorumConfig>::new("decorum")
@@ -235,21 +235,15 @@ pub fn init<R: Runtime>() -> TauriPlugin<R, DecorumConfig> {
             commands::show_snap_overlay,
         ])
         .setup(move |app, api| {
-            let window_configs: HashMap<String, WindowConfig> = api
-                .config()
-                .windows
-                .iter()
-                .map(|win_config| (win_config.label.clone(), win_config.clone()))
-                .collect();
+            let decorum_config = api.config().clone();
 
-            let c_window_configs = window_configs.clone();
-            app.manage(WindowConfigs(Arc::new(RwLock::new(c_window_configs))));
-
-            #[cfg(any(target_os = "macos", target_os = "windows"))]
+            #[cfg(target_os = "macos")]
             {
-                let insets_map = window_configs
+                let insets_map: HashMap<String, Option<LogicalPosition<f64>>> = decorum_config
+                    .merged
                     .iter()
                     .filter_map(|(label, config)| {
+                        // Make sure there's at least one inset defined.
                         config.window_buttons.as_ref().and_then(|buttons| {
                             if buttons.inset_x.is_some() || buttons.inset_y.is_some() {
                                 Some((
@@ -269,6 +263,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R, DecorumConfig> {
                 app.manage(WindowButtonsInsetsState(Arc::new(RwLock::new(insets_map))));
             }
 
+            // app.manage(DecorumConfigState(c_config));
             Ok(())
         })
         .on_page_load(|win, _payload: &tauri::webview::PageLoadPayload| {
