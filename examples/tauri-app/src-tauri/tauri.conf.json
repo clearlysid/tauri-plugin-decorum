@@ -8,7 +8,30 @@
     "beforeBuildCommand": "pnpm build",
     "frontendDist": "../.output/public"
   },
-  "plugins": {},
+  "plugins": {
+    "decorum": {
+      "default": {
+        "windowButtons": {
+          "insetX": 20.0,
+          "insetY": 20.0
+        }
+      },
+      "windows": [
+        {
+          "label": "other",
+          "windowButtons": {
+            "insetX": 14.0
+          }
+        },
+        {
+          "label": "main",
+          "windowButtons": {
+            "insetY": 15.0
+          }
+        }
+      ]
+    }
+  },
   "app": {
     "windows": [
       {

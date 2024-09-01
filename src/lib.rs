@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use config::DecorumConfig;
 use parking_lot::RwLock;
 use tauri::plugin::{Builder, TauriPlugin};
 use tauri::{Emitter, Listener, LogicalPosition, Manager, Result, Runtime, WebviewWindow};
@@ -225,22 +224,36 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 struct WindowButtonsInsetsState(Arc<RwLock<HashMap<String, Option<LogicalPosition<f64>>>>>);
 
-// #[allow(dead_code)]
-// struct DecorumConfigState(DecorumConfig);
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+struct DefaultInsets(LogicalPosition<f64>);
 
-pub fn init<R: Runtime>() -> TauriPlugin<R, DecorumConfig> {
-    let mut builder = Builder::<R, DecorumConfig>::new("decorum")
+struct DecorumConfigState(HashMap<String, config::WindowConfig>);
+
+pub fn init<R: Runtime>() -> TauriPlugin<R, config::DecorumConfig> {
+    let mut builder = Builder::<R, config::DecorumConfig>::new("decorum")
         .invoke_handler(tauri::generate_handler![
             commands::set_window_buttons_inset,
             commands::show_snap_overlay,
         ])
         .setup(move |app, api| {
-            let decorum_config = api.config().clone();
+            let config = api.config().clone();
+
+            #[cfg(any(target_os = "macos", target_os = "windows"))]
+            if let Some(buttons) = &config.all.window_buttons {
+                app.manage(DefaultInsets(match (buttons.inset_x, buttons.inset_y) {
+                    (Some(x), Some(y)) => LogicalPosition::new(x, y),
+                    _ => macos::DEFAULT_TRAFFIC_LIGHTS_INSET,
+                }));
+            }
+
+            let merged = config::merge(config);
+
+            println!("-CONFIG: \n{:#?}", api.config().clone());
+            println!("-MERGED CONFIG: \n{:#?}", merged);
 
             #[cfg(target_os = "macos")]
             {
-                let insets_map: HashMap<String, Option<LogicalPosition<f64>>> = decorum_config
-                    .merged
+                let insets_map: HashMap<String, Option<LogicalPosition<f64>>> = merged
                     .iter()
                     .filter_map(|(label, config)| {
                         // Make sure there's at least one inset defined.
@@ -263,7 +276,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R, DecorumConfig> {
                 app.manage(WindowButtonsInsetsState(Arc::new(RwLock::new(insets_map))));
             }
 
-            // app.manage(DecorumConfigState(c_config));
+            app.manage(DecorumConfigState(merged));
             Ok(())
         })
         .on_page_load(|win, _payload: &tauri::webview::PageLoadPayload| {

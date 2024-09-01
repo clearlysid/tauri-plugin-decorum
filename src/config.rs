@@ -46,8 +46,6 @@ pub struct DecorumConfig {
     pub all: WindowConfig,
     #[serde(default)]
     pub windows: Vec<LabeledWindowConfig>,
-    #[serde(skip)]
-    pub merged: HashMap<String, WindowConfig>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -113,105 +111,66 @@ impl Default for BoolOrVec {
     }
 }
 
-impl DecorumConfig {
-    /// Creates a new `DecorumConfig` with the given configurations and merges them.
-    ///
-    /// This constructor immediately calls `merge_configurations()` to ensure
-    /// that the `merged` field is populated with the combined configurations.
-    ///
-    /// # Arguments
-    ///
-    /// * `all` - The default configuration applied to all windows
-    /// * `windows` - A vector of labeled window-specific configurations
-    ///
-    /// # Returns
-    ///
-    /// A new `DecorumConfig` instance with merged configurations
-    pub fn new(all: WindowConfig, windows: Vec<LabeledWindowConfig>) -> Self {
-        let mut config = DecorumConfig {
-            all,
-            windows,
-            merged: HashMap::new(),
+/// Merges the default "all" configuration with individual window configurations.
+///
+/// This method populates the `merged` field with configurations for each window,
+/// combining window-specific settings with the default "all" settings.
+/// Window-specific settings take priority over the default settings.
+pub fn merge(config: DecorumConfig) -> HashMap<String, WindowConfig> {
+    let default_config = config.all.clone();
+    let mut merged = HashMap::new();
+
+    for LabeledWindowConfig { label, config } in &config.windows {
+        let merged_config = WindowConfig {
+            window_buttons: config
+                .window_buttons
+                .clone()
+                .or_else(|| default_config.window_buttons.clone()),
+            create_overlay_titlebar: merge_bool_or_vec(
+                &config.create_overlay_titlebar,
+                &default_config.create_overlay_titlebar,
+            ),
+            transparent_webviews: merge_bool_or_vec(
+                &config.transparent_webviews,
+                &default_config.transparent_webviews,
+            ),
         };
-        config.merge_configurations();
-        config
+        merged.insert(label.clone(), merged_config);
     }
 
-    /// Merges the default "all" configuration with individual window configurations.
-    ///
-    /// This method populates the `merged` field with configurations for each window,
-    /// combining window-specific settings with the default "all" settings.
-    /// Window-specific settings take priority over the default settings.
-    fn merge_configurations(&mut self) {
-        let default_config = self.all.clone();
-        let mut merged = HashMap::new();
-
-        for LabeledWindowConfig { label, config } in &self.windows {
-            let merged_config = WindowConfig {
-                window_buttons: config
-                    .window_buttons
-                    .clone()
-                    .or_else(|| default_config.window_buttons.clone()),
-                create_overlay_titlebar: merge_bool_or_vec(
-                    &config.create_overlay_titlebar,
-                    &default_config.create_overlay_titlebar,
-                ),
-                transparent_webviews: merge_bool_or_vec(
-                    &config.transparent_webviews,
-                    &default_config.transparent_webviews,
-                ),
-            };
-            merged.insert(label.clone(), merged_config);
-        }
-
-        // Add default config for any window not explicitly defined
-        for label in self.get_all_window_labels() {
-            merged
-                .entry(label)
-                .or_insert_with(|| default_config.clone());
-        }
-
-        self.merged = merged;
+    // Add default config for any window not explicitly defined
+    for label in get_all_window_labels(config) {
+        merged
+            .entry(label)
+            .or_insert_with(|| default_config.clone());
     }
 
-    /// Retrieves all unique window labels mentioned in the configuration.
-    ///
-    /// This method collects labels from both the "all" section (for `create_overlay_titlebar` and `transparent_webviews`)
-    /// and the individual window configurations.
-    ///
-    /// # Returns
-    ///
-    /// Returns a `HashSet<String>` containing all unique window labels.
-    pub fn get_all_window_labels(&self) -> std::collections::HashSet<String> {
-        let mut labels = std::collections::HashSet::new();
+    merged
+}
 
-        // Collect labels from "all" section
-        if let Some(BoolOrVec::Items(items)) = &self.all.create_overlay_titlebar {
-            labels.extend(items.iter().cloned());
-        }
-        if let Some(BoolOrVec::Items(items)) = &self.all.transparent_webviews {
-            labels.extend(items.iter().cloned());
-        }
+/// Retrieves all unique window labels mentioned in the configuration.
+///
+/// This method collects labels from both the "all" section (for `create_overlay_titlebar` and `transparent_webviews`)
+/// and the individual window configurations.
+///
+/// # Returns
+///
+/// Returns a `HashSet<String>` containing all unique window labels.
+pub fn get_all_window_labels(config: DecorumConfig) -> std::collections::HashSet<String> {
+    let mut labels = std::collections::HashSet::new();
 
-        // Collect labels from individual window configs
-        labels.extend(self.windows.iter().map(|w| w.label.clone()));
-
-        labels
+    // Collect labels from "all" section
+    if let Some(BoolOrVec::Items(items)) = &config.all.create_overlay_titlebar {
+        labels.extend(items.iter().cloned());
+    }
+    if let Some(BoolOrVec::Items(items)) = &config.all.transparent_webviews {
+        labels.extend(items.iter().cloned());
     }
 
-    /// Retrieves the merged configuration for a specific window.
-    ///
-    /// # Arguments
-    ///
-    /// * `label` - The label of the window to retrieve the configuration for
-    ///
-    /// # Returns
-    ///
-    /// Returns an `Option<&WindowConfig>` containing the merged configuration for the specified window,
-    /// or `None` if no configuration exists for the given label.
-    pub fn get_window_config(&self, label: &str) -> Option<&WindowConfig> {
-        self.merged.get(label)
-    }
+    // Collect labels from individual window configs
+    labels.extend(config.windows.iter().map(|w| w.label.clone()));
+
+    labels
 }
 
 /// Merges two `BoolOrVec` options, prioritizing the specific configuration over the default.
@@ -246,12 +205,9 @@ pub fn merge_bool_or_vec(
 
 impl Default for DecorumConfig {
     fn default() -> Self {
-        let mut config = DecorumConfig {
+        DecorumConfig {
             all: WindowConfig::default(),
             windows: Vec::new(),
-            merged: HashMap::new(),
-        };
-        config.merge_configurations();
-        config
+        }
     }
 }

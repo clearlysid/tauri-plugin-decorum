@@ -1,7 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::{LogicalPosition, Manager};
+use tauri::Manager;
 use tauri_plugin_decorum::WebviewWindowExt;
 
 fn main() {
@@ -20,8 +20,8 @@ fn main() {
 
                 let _ = main_window.make_transparent();
                 let _ = main_window.create_overlay_titlebar();
-                let _ =
-                    main_window.set_window_buttons_inset(Some(LogicalPosition::new(15.0, 20.0)));
+                // let _ =
+                //     main_window.set_window_buttons_inset(Some(LogicalPosition::new(15.0, 20.0)));
 
                 let _ = main_window.set_window_level(NSWindowLevel::NSNormalWindowLevel);
             }
