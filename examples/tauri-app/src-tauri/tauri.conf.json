@@ -10,19 +10,13 @@
   },
   "plugins": {
     "decorum": {
-      "default": {
+      "all": {
+        "createOverlayTitlebar": true,
         "windowButtons": {
-          "insetX": 20.0,
-          "insetY": 20.0
+          "insetX": 12.0
         }
       },
       "windows": [
-        {
-          "label": "other",
-          "windowButtons": {
-            "insetX": 14.0
-          }
-        },
         {
           "label": "main",
           "windowButtons": {

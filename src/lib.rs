@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use config::{DecorumPluginConfig, WindowConfig};
 use parking_lot::RwLock;
 use tauri::plugin::{Builder, TauriPlugin};
 use tauri::{Emitter, Listener, LogicalPosition, Manager, Result, Runtime, WebviewWindow};
@@ -131,7 +132,7 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
     // TODO: Also Implement for Windows 11 (>=22H2)
     #[cfg(target_os = "macos")]
     fn set_window_buttons_inset(&self, inset_option: Option<LogicalPosition<f64>>) -> Result<()> {
-        let insets_state = &self.state::<WindowButtonsInsetsState>();
+        let insets_state = &self.state::<WindowButtonsInsetState>();
         let mut insets_map = insets_state.0.write();
 
         let window_label = self.label().to_string();
@@ -222,15 +223,34 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
 }
 
 #[cfg(any(target_os = "macos", target_os = "windows"))]
-struct WindowButtonsInsetsState(Arc<RwLock<HashMap<String, Option<LogicalPosition<f64>>>>>);
+struct WindowButtonsInsetState(Arc<RwLock<HashMap<String, Option<LogicalPosition<f64>>>>>);
 
 #[cfg(any(target_os = "macos", target_os = "windows"))]
-struct DefaultInsets(LogicalPosition<f64>);
+struct DefaultInset(Option<LogicalPosition<f64>>);
 
-struct DecorumConfigState(HashMap<String, config::WindowConfig>);
+struct DecorumConfigState {
+    all: WindowConfig,
+    merged: HashMap<String, WindowConfig>,
+}
 
-pub fn init<R: Runtime>() -> TauriPlugin<R, config::DecorumConfig> {
-    let mut builder = Builder::<R, config::DecorumConfig>::new("decorum")
+impl DecorumConfigState {
+    /// Retrieves the merged configuration for a specific window.
+    ///
+    /// # Arguments
+    ///
+    /// * `label` - The label of the window to retrieve the configuration for
+    ///
+    /// # Returns
+    ///
+    /// Returns an `Option<&WindowConfig>` containing the merged configuration for the specified window,
+    /// or `None` if no configuration exists for the given label.
+    pub fn get_for(&self, label: &str) -> Option<&WindowConfig> {
+        self.merged.get(label)
+    }
+}
+
+pub fn init<R: Runtime>() -> TauriPlugin<R, DecorumPluginConfig> {
+    let mut builder = Builder::<R, DecorumPluginConfig>::new("decorum")
         .invoke_handler(tauri::generate_handler![
             commands::set_window_buttons_inset,
             commands::show_snap_overlay,
@@ -239,21 +259,32 @@ pub fn init<R: Runtime>() -> TauriPlugin<R, config::DecorumConfig> {
             let config = api.config().clone();
 
             #[cfg(any(target_os = "macos", target_os = "windows"))]
-            if let Some(buttons) = &config.all.window_buttons {
-                app.manage(DefaultInsets(match (buttons.inset_x, buttons.inset_y) {
-                    (Some(x), Some(y)) => LogicalPosition::new(x, y),
-                    _ => macos::DEFAULT_TRAFFIC_LIGHTS_INSET,
-                }));
+            {
+                let default_inset = config.all.window_buttons.as_ref().and_then(|buttons| {
+                    if buttons.inset_x.is_some() || buttons.inset_y.is_some() {
+                        Some(LogicalPosition::new(
+                            buttons.inset_x.unwrap_or_default(),
+                            buttons.inset_y.unwrap_or_default(),
+                        ))
+                    } else {
+                        None
+                    }
+                });
+
+                app.manage(DefaultInset(default_inset));
             }
 
-            let merged = config::merge(config);
+            let merged_config = config.merged();
 
-            println!("-CONFIG: \n{:#?}", api.config().clone());
-            println!("-MERGED CONFIG: \n{:#?}", merged);
+            #[cfg(debug_assertions)]
+            {
+                println!("DECORUM-CONFIG: \n{:#?}", config.clone());
+                println!("DECORUM-MERGED CONFIG: \n{:#?}", merged_config);
+            }
 
             #[cfg(target_os = "macos")]
             {
-                let insets_map: HashMap<String, Option<LogicalPosition<f64>>> = merged
+                let insets_map: HashMap<String, Option<LogicalPosition<f64>>> = merged_config
                     .iter()
                     .filter_map(|(label, config)| {
                         // Make sure there's at least one inset defined.
@@ -273,10 +304,13 @@ pub fn init<R: Runtime>() -> TauriPlugin<R, config::DecorumConfig> {
                     })
                     .collect();
 
-                app.manage(WindowButtonsInsetsState(Arc::new(RwLock::new(insets_map))));
+                app.manage(WindowButtonsInsetState(Arc::new(RwLock::new(insets_map))));
             }
 
-            app.manage(DecorumConfigState(merged));
+            app.manage(DecorumConfigState {
+                all: config.all,
+                merged: merged_config,
+            });
             Ok(())
         })
         .on_page_load(|win, _payload: &tauri::webview::PageLoadPayload| {
@@ -289,10 +323,13 @@ pub fn init<R: Runtime>() -> TauriPlugin<R, config::DecorumConfig> {
     #[cfg(any(target_os = "macos", target_os = "windows"))]
     {
         builder = builder.on_window_ready(|window| {
-            let insets_state = window.state::<WindowButtonsInsetsState>();
+            let insets_state = window.state::<WindowButtonsInsetState>();
             let insets_map = insets_state.0.read();
 
-            if let Some(Some(insets)) = insets_map.get(window.label()) {
+            if let Some(insets) = insets_map
+                .get(window.label())
+                .unwrap_or(&window.state::<DefaultInset>().0)
+            {
                 #[cfg(target_os = "macos")]
                 macos::nswindow_delegates::setup(window.clone(), insets.to_owned());
             }

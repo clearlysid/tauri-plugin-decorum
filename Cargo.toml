@@ -16,6 +16,7 @@ tauri = { version = "2.0.0-rc" }
 serde = "1.0"
 anyhow = "1.0"
 parking_lot = "0.12.3"
+serde_json = "1.0.127"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 rand = "^0.8"

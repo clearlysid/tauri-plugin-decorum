@@ -1,14 +1,14 @@
 use nswindow_delegates::UnsafeWindowHandle;
 use tauri::{LogicalPosition, Manager, Runtime, Window};
 
-use crate::WindowButtonsInsetsState;
+use crate::WindowButtonsInsetState;
 
 pub mod nswindow_delegates;
 
 pub const DEFAULT_TRAFFIC_LIGHTS_INSET: LogicalPosition<f64> = LogicalPosition::new(10.0, 15.0);
 
 pub fn update_window_controls_inset<R: Runtime>(window: &Window<R>) {
-    let styles_state = window.state::<WindowButtonsInsetsState>();
+    let styles_state = window.state::<WindowButtonsInsetState>();
     let styles_map_rw = styles_state.0.try_read();
     if let Some(map) = styles_map_rw {
         if let Some(inset_option) = map.get(&window.label().to_string()) {
