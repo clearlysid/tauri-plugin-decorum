@@ -4,6 +4,9 @@ use tauri::{Emitter, Error, Listener, Runtime, WebviewWindow};
 #[cfg(target_os = "macos")]
 mod traffic;
 
+#[cfg(target_os = "linux")]
+mod dconf;
+
 mod commands;
 
 #[cfg(target_os = "macos")]
@@ -84,13 +87,14 @@ impl<'a> WebviewWindowExt for WebviewWindow {
 
                 // return this string style 'appmenu:minimize,maximize,close'
                 if let Ok(app_menu_config) =
-                    dconf_rs::get_string("/org/gnome/desktop/wm/preferences/button-layout")
+                    dconf::read("/org/gnome/desktop/wm/preferences/button-layout")
                 {
                     controls = app_menu_config
                         .trim_start_matches("appmenu:")
                         .split(',')
                         .map(|x| x.to_string())
                         .collect::<Vec<String>>();
+                    eprintln!("{controls:?}");
                 };
 
                 let controls = format!("{:?}", controls);
