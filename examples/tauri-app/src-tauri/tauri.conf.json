@@ -1,33 +1,58 @@
 {
-  "productName": "tauri-app",
-  "version": "0.0.0",
-  "identifier": "com.tauritempplugin.dev",
+  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "productName": "Plugin Decorum Example",
+  "identifier": "com.github/clearlysid/tauri-plugin-decorum",
   "build": {
-    "beforeDevCommand": "yarn dev",
-    "beforeBuildCommand": "yarn build",
+    "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
-    "frontendDist": "../dist"
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../.output/public"
+  },
+  "plugins": {
+    "decorum": {
+      "all": {
+        "createOverlayTitlebar": true,
+        "windowButtons": {
+          "insetX": 12.0
+        }
+      },
+      "windows": [
+        {
+          "label": "main",
+          "windowButtons": {
+            "insetY": 15.0
+          }
+        }
+      ]
+    }
   },
   "app": {
-    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "Decorum",
+        "minHeight": 500,
+        "minWidth": 300,
+        "width": 580,
+        "height": 400,
+        "hiddenTitle": false,
+        "zoomHotkeysEnabled": true,
+        "titleBarStyle": "Overlay",
+        "windowEffects": {
+          "effects": ["underWindowBackground", "mica"]
+        }
+      }
+    ],
     "security": {
       "csp": null
     },
-    "windows": [
-      {
-        "fullscreen": false,
-        "resizable": true,
-        "title": "tauri-app",
-        "width": 600,
-        "height": 400,
-        "titleBarStyle": "Overlay",
-        "hiddenTitle": true
-      }
-    ]
+    "withGlobalTauri": false
   },
   "bundle": {
+    "macOS": {
+      "signingIdentity": "-"
+    },
     "active": true,
-    "targets": "all",
+    "targets": ["app", "nsis"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

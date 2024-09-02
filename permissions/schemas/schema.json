@@ -295,6 +295,20 @@
       "type": "string",
       "oneOf": [
         {
+          "description": "allow-set-window-buttons-inset -> Enables the set_window_buttons_inset command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "allow-set-window-buttons-inset"
+          ]
+        },
+        {
+          "description": "deny-set-window-buttons-inset -> Denies the set_window_buttons_inset command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "deny-set-window-buttons-inset"
+          ]
+        },
+        {
           "description": "allow-show-snap-overlay -> Enables the show_snap_overlay command without any pre-configured scope.",
           "type": "string",
           "enum": [

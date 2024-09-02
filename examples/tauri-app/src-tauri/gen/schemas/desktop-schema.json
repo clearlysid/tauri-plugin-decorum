@@ -1040,13 +1040,6 @@
           ]
         },
         {
-          "description": "core:webview:allow-get-all-webviews -> Enables the get_all_webviews command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "core:webview:allow-get-all-webviews"
-          ]
-        },
-        {
           "description": "core:webview:allow-internal-toggle-devtools -> Enables the internal_toggle_devtools command without any pre-configured scope.",
           "type": "string",
           "enum": [
@@ -1128,13 +1121,6 @@
           "type": "string",
           "enum": [
             "core:webview:deny-create-webview-window"
-          ]
-        },
-        {
-          "description": "core:webview:deny-get-all-webviews -> Denies the get_all_webviews command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "core:webview:deny-get-all-webviews"
           ]
         },
         {
@@ -1261,13 +1247,6 @@
           "type": "string",
           "enum": [
             "core:window:allow-destroy"
-          ]
-        },
-        {
-          "description": "core:window:allow-get-all-windows -> Enables the get_all_windows command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "core:window:allow-get-all-windows"
           ]
         },
         {
@@ -1726,13 +1705,6 @@
           ]
         },
         {
-          "description": "core:window:deny-get-all-windows -> Denies the get_all_windows command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "core:window:deny-get-all-windows"
-          ]
-        },
-        {
           "description": "core:window:deny-hide -> Denies the hide command without any pre-configured scope.",
           "type": "string",
           "enum": [
@@ -2145,10 +2117,24 @@
           ]
         },
         {
+          "description": "decorum:allow-set-window-buttons-inset -> Enables the set_window_buttons_inset command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "decorum:allow-set-window-buttons-inset"
+          ]
+        },
+        {
           "description": "decorum:allow-show-snap-overlay -> Enables the show_snap_overlay command without any pre-configured scope.",
           "type": "string",
           "enum": [
             "decorum:allow-show-snap-overlay"
+          ]
+        },
+        {
+          "description": "decorum:deny-set-window-buttons-inset -> Denies the set_window_buttons_inset command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "decorum:deny-set-window-buttons-inset"
           ]
         },
         {

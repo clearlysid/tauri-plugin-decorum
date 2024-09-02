@@ -1,31 +1,72 @@
+use std::collections::HashMap;
+use std::sync::Arc;
+
+use config::{DecorumPluginConfig, WindowConfig};
+use parking_lot::RwLock;
 use tauri::plugin::{Builder, TauriPlugin};
-use tauri::{Emitter, Error, Listener, Runtime, WebviewWindow};
-
-#[cfg(target_os = "macos")]
-mod traffic;
-
-mod commands;
+use tauri::{Emitter, Listener, LogicalPosition, Manager, Result, Runtime, WebviewWindow};
 
 #[cfg(target_os = "macos")]
 #[macro_use]
 extern crate objc;
 
-/// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the decorum APIs.
-pub trait WebviewWindowExt {
-    fn create_overlay_titlebar(&self) -> Result<&WebviewWindow, Error>;
-    #[cfg(target_os = "macos")]
-    fn set_traffic_lights_inset(&self, x: f32, y: f32) -> Result<&WebviewWindow, Error>;
-    #[cfg(target_os = "macos")]
-    fn make_transparent(&self) -> Result<&WebviewWindow, Error>;
-    #[cfg(target_os = "macos")]
-    fn set_window_level(&self, level: u32) -> Result<&WebviewWindow, Error>;
+mod commands;
+mod config;
+
+#[cfg(target_os = "macos")]
+mod macos;
+
+/// Rust representation of [NSWindowLevel](https://developer.apple.com/documentation/appkit/NSWindowLevel)
+#[cfg(target_os = "macos")]
+#[repr(u32)]
+pub enum NSWindowLevel {
+    NSNormalWindowLevel = 0,
+    NSFloatingOrSubmenuOrTornOffMenuWindowLevel = 3,
+    NSMainMenuWindowLevel = 24,
+    NSStatusWindowLevel = 25,
+    NSModalPanelWindowLevel = 8,
+    NSPopUpMenuWindowLevel = 101,
+    NSScreenSaverWindowLevel = 1000,
 }
 
-impl<'a> WebviewWindowExt for WebviewWindow {
+#[cfg(target_os = "macos")]
+impl From<u32> for NSWindowLevel {
+    fn from(n: u32) -> Self {
+        match n {
+            0 => NSWindowLevel::NSNormalWindowLevel,
+            3 => NSWindowLevel::NSFloatingOrSubmenuOrTornOffMenuWindowLevel,
+            8 => NSWindowLevel::NSModalPanelWindowLevel,
+            24 => NSWindowLevel::NSMainMenuWindowLevel,
+            25 => NSWindowLevel::NSStatusWindowLevel,
+            101 => NSWindowLevel::NSPopUpMenuWindowLevel,
+            1000 => NSWindowLevel::NSScreenSaverWindowLevel,
+            _ => NSWindowLevel::NSNormalWindowLevel,
+        }
+    }
+}
+
+/// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the decorum APIs.
+pub trait WebviewWindowExt {
+    fn create_overlay_titlebar(&self) -> Result<()>;
+
+    #[cfg(target_os = "macos")]
+    fn set_window_buttons_inset(&self, options: Option<LogicalPosition<f64>>) -> Result<()>;
+
+    #[cfg(target_os = "macos")]
+    fn make_transparent(&self) -> Result<()>;
+
+    #[cfg(target_os = "macos")]
+    fn set_window_level(&self, level: NSWindowLevel) -> Result<()>;
+}
+
+impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
     /// Create a custom titlebar overlay.
     /// This will remove the default titlebar and create a draggable area for the titlebar.
-    /// On Windows, it will also create custom window controls.
-    fn create_overlay_titlebar(&self) -> Result<&WebviewWindow, Error> {
+    ///
+    /// ## Platform-specific:
+    ///
+    /// - **Windows:** On Windows, it will also create custom window controls.
+    fn create_overlay_titlebar(&self) -> Result<()> {
         #[cfg(target_os = "windows")]
         self.set_decorations(false)?;
 
@@ -81,115 +122,241 @@ impl<'a> WebviewWindowExt for WebviewWindow {
             }
         });
 
-        Ok(self)
+        Ok(())
     }
 
-    /// Set the inset of the traffic lights.
-    /// This will move the traffic lights to the specified position.
-    /// This is only available on macOS.
+    /// Sets the window controls (Traffic lights) inset
+    ///
+    /// ## Platform-specific:
+    ///
+    /// - **macOS:** Only supported on macOS.
+    // TODO: Also Implement for Windows 11 (>=22H2)
     #[cfg(target_os = "macos")]
-    fn set_traffic_lights_inset(&self, x: f32, y: f32) -> Result<&WebviewWindow, Error> {
+    fn set_window_buttons_inset(&self, inset_option: Option<LogicalPosition<f64>>) -> Result<()> {
+        let insets_state = &self.state::<WindowButtonsInsetState>();
+        let mut insets_map = insets_state.0.write();
+
+        let window_label = self.label().to_string();
+
+        match inset_option {
+            Some(inset) => {
+                if insets_map
+                    .insert(window_label, Some(inset.clone()))
+                    .is_none()
+                {
+                    let c_insets_map = insets_map.clone();
+                    let c_win = self.clone();
+
+                    self.on_window_event(move |event| match event {
+                        tauri::WindowEvent::ThemeChanged(..) => {
+                            if c_insets_map.contains_key(c_win.label()) {
+                                let _ = ensure_main_thread(&c_win, move |win| {
+                                    macos::update_window_controls_inset(&win.as_ref().window());
+                                    Ok(())
+                                });
+                            }
+                        }
+                        _ => (),
+                    });
+                }
+            }
+            None => {
+                insets_map.remove(&window_label);
+            }
+        }
+
         ensure_main_thread(self, move |win| {
-            let ns_window = win.ns_window()?;
-            let ns_window_handle = traffic::UnsafeWindowHandle(ns_window);
+            let inset = inset_option.unwrap_or(macos::DEFAULT_TRAFFIC_LIGHTS_INSET);
 
-            traffic::position_traffic_lights(ns_window_handle, x.into(), y.into());
+            macos::position_window_controls(
+                macos::nswindow_delegates::UnsafeWindowHandle(
+                    win.ns_window().expect("Failed to create window handle"),
+                ),
+                inset.x,
+                inset.y,
+            );
 
-            Ok(win)
+            Ok(())
         })
     }
 
-    /// Set the window background to transparent.
-    /// This helper function is different from Tauri's default
-    /// as it doesn't use the `transparent` flag or macOS Private APIs.
+    /// Makes the background of the WKWebView layer transparent.
+    /// This differs from Tauri's implementation as it does not change the window background which causes performance performance issues and artifacts when shadows are enabled on the window.
+    /// Use Tauri's implementation to make the window itself transparent.
+    ///
+    /// ## Platform-specific:
+    ///
+    /// - **macOS:** Only supported on macOS.
+    ///
+    /// ## Warning:
+    /// This feature is an Apple internal implementation (aka private API) on macOS.
+    /// You cannot use this if your application will be published on the App Store.
     #[cfg(target_os = "macos")]
-    fn make_transparent(&self) -> Result<&WebviewWindow, Error> {
+    fn make_transparent(&self) -> Result<()> {
         use cocoa::{
-            appkit::NSColor,
             base::{id, nil},
             foundation::NSString,
         };
 
-        // Make webview background transparent
         self.with_webview(|webview| unsafe {
-            let id = webview.inner();
+            let wkwebview = webview.inner();
+            // `NO` is disallowed, use [NSNumber numberWithBool:NO]
             let no: id = msg_send![class!(NSNumber), numberWithBool:0];
+            // Deprecated since OS X 10.14
+            // [https://developer.apple.com/documentation/webkit/webview/1408486-drawsbackground]
             let _: id =
-                msg_send![id, setValue:no forKey: NSString::alloc(nil).init_str("drawsBackground")];
-        })?;
-
-        // Make window background transparent
-        ensure_main_thread(self, move |win| {
-            let ns_win = win.ns_window()? as id;
-            unsafe {
-                let win_bg_color =
-                    NSColor::colorWithSRGBRed_green_blue_alpha_(nil, 0.0, 0.0, 0.0, 0.0);
-                let _: id = msg_send![ns_win, setBackgroundColor: win_bg_color];
-            }
-            Ok(win)
+                msg_send![wkwebview, setValue:no forKey: NSString::alloc(nil).init_str("drawsBackground")];
         })
     }
 
-    /// Set the window level.
+    /// Set the window level.   
     /// This will set the window level to the specified value.
-    /// NSWindowLevel values can be found [here](https://developer.apple.com/documentation/appkit/nswindowlevel?language=objc).
-    /// This is only available on macOS.
+    /// NSWindowLevel values can be found [here](https://developer.apple.com/documentation/appkit/NSWindowLevel).
+    ///
+    /// ## Platform-specific:
+    ///
+    /// - **macOS:** Only supported on macOS.
     #[cfg(target_os = "macos")]
-    fn set_window_level(&self, level: u32) -> Result<&WebviewWindow, Error> {
-        ensure_main_thread(self, move |win| {
+    fn set_window_level(&self, level: NSWindowLevel) -> Result<()> {
+        ensure_main_thread(self, move |win| unsafe {
             let ns_win = win.ns_window()? as cocoa::base::id;
-            unsafe {
-                let _: () = msg_send![ns_win, setLevel: level];
-            }
-            Ok(win)
+            let _: () = msg_send![ns_win, setLevel: level];
+            Ok(())
         })
     }
 }
 
-pub fn init<R: Runtime>() -> TauriPlugin<R> {
-    Builder::new("decorum")
-        .invoke_handler(tauri::generate_handler![commands::show_snap_overlay])
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+struct WindowButtonsInsetState(Arc<RwLock<HashMap<String, Option<LogicalPosition<f64>>>>>);
+
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+struct DefaultInset(Option<LogicalPosition<f64>>);
+
+struct DecorumConfigState {
+    all: WindowConfig,
+    merged: HashMap<String, WindowConfig>,
+}
+
+impl DecorumConfigState {
+    /// Retrieves the merged configuration for a specific window.
+    ///
+    /// # Arguments
+    ///
+    /// * `label` - The label of the window to retrieve the configuration for
+    ///
+    /// # Returns
+    ///
+    /// Returns an `Option<&WindowConfig>` containing the merged configuration for the specified window,
+    /// or `None` if no configuration exists for the given label.
+    pub fn get_for(&self, label: &str) -> Option<&WindowConfig> {
+        self.merged.get(label)
+    }
+}
+
+pub fn init<R: Runtime>() -> TauriPlugin<R, DecorumPluginConfig> {
+    let mut builder = Builder::<R, DecorumPluginConfig>::new("decorum")
+        .invoke_handler(tauri::generate_handler![
+            commands::set_window_buttons_inset,
+            commands::show_snap_overlay,
+        ])
+        .setup(move |app, api| {
+            let config = api.config().clone();
+
+            #[cfg(any(target_os = "macos", target_os = "windows"))]
+            {
+                let default_inset = config.all.window_buttons.as_ref().and_then(|buttons| {
+                    if buttons.inset_x.is_some() || buttons.inset_y.is_some() {
+                        Some(LogicalPosition::new(
+                            buttons.inset_x.unwrap_or_default(),
+                            buttons.inset_y.unwrap_or_default(),
+                        ))
+                    } else {
+                        None
+                    }
+                });
+
+                app.manage(DefaultInset(default_inset));
+            }
+
+            let merged_config = config.merged();
+
+            // TODO: Remove
+            #[cfg(debug_assertions)]
+            {
+                println!("DECORUM-CONFIG: \n{:#?}", config.clone());
+                println!("DECORUM-MERGED CONFIG: \n{:#?}", merged_config);
+            }
+
+            #[cfg(target_os = "macos")]
+            {
+                let insets_map: HashMap<String, Option<LogicalPosition<f64>>> = merged_config
+                    .iter()
+                    .filter_map(|(label, config)| {
+                        // Make sure there's at least one inset defined.
+                        config.window_buttons.as_ref().and_then(|buttons| {
+                            if buttons.inset_x.is_some() || buttons.inset_y.is_some() {
+                                Some((
+                                    label.clone(),
+                                    Some(LogicalPosition::new(
+                                        buttons.inset_x.unwrap_or_default(),
+                                        buttons.inset_y.unwrap_or_default(),
+                                    )),
+                                ))
+                            } else {
+                                None
+                            }
+                        })
+                    })
+                    .collect();
+
+                app.manage(WindowButtonsInsetState(Arc::new(RwLock::new(insets_map))));
+            }
+
+            app.manage(DecorumConfigState {
+                all: config.all,
+                merged: merged_config,
+            });
+            Ok(())
+        })
         .on_page_load(|win, _payload: &tauri::webview::PageLoadPayload| {
             match win.emit("decorum-page-load", ()) {
                 Ok(_) => {}
                 Err(e) => println!("decorum error: {:?}", e),
             }
-        })
-        .on_window_ready(|_win| {
-            #[cfg(target_os = "macos")]
-            traffic::setup_traffic_light_positioner(_win);
-            return;
-        })
-        .build()
-}
+        });
 
-#[cfg(target_os = "macos")]
-fn is_main_thread() -> bool {
-    std::thread::current().name() == Some("main")
-}
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
+    {
+        builder = builder.on_window_ready(|window| {
+            let insets_state = window.state::<WindowButtonsInsetState>();
+            let insets_map = insets_state.0.read();
 
-#[cfg(target_os = "macos")]
-fn ensure_main_thread<F>(
-    win: &WebviewWindow,
-    main_action: F,
-) -> Result<&WebviewWindow, tauri::Error>
-where
-    F: FnOnce(&WebviewWindow) -> Result<&WebviewWindow, Error> + Send + 'static,
-{
-    match is_main_thread() {
-        true => {
-            main_action(win)?;
-            Ok(win)
-        }
-        false => {
-            let win2 = win.clone();
-
-            match win.run_on_main_thread(move || {
-                main_action(&win2).unwrap();
-            }) {
-                Ok(_) => Ok(win),
-                Err(e) => Err(e),
+            if let Some(insets) = insets_map
+                .get(window.label())
+                .unwrap_or(&window.state::<DefaultInset>().0)
+            {
+                #[cfg(target_os = "macos")]
+                macos::nswindow_delegates::setup(window.clone(), insets.to_owned());
             }
+        });
+    }
+
+    builder.build()
+}
+
+#[cfg(target_os = "macos")]
+pub(crate) fn ensure_main_thread<F, R: Runtime>(
+    win: &WebviewWindow<R>,
+    main_action: F,
+) -> Result<()>
+where
+    F: FnOnce(&WebviewWindow<R>) -> Result<()> + Send + 'static,
+{
+    match std::thread::current().name() == Some("main") {
+        true => main_action(win),
+        false => {
+            let c_win = win.clone();
+            win.run_on_main_thread(move || main_action(&c_win).unwrap())
         }
     }
 }
