@@ -16,6 +16,7 @@ mod config;
 #[cfg(target_os = "macos")]
 mod macos;
 
+/// Rust representation of [NSWindowLevel](https://developer.apple.com/documentation/appkit/NSWindowLevel)
 #[cfg(target_os = "macos")]
 #[repr(u32)]
 pub enum NSWindowLevel {
@@ -186,7 +187,10 @@ impl<R: Runtime> WebviewWindowExt for WebviewWindow<R> {
     /// ## Platform-specific:
     ///
     /// - **macOS:** Only supported on macOS.
-    /// This is a private API on macOS, so you cannot use this if your application will be published on the App Store.
+    ///
+    /// ## Warning:
+    /// This feature is an Apple internal implementation (aka private API) on macOS.
+    /// You cannot use this if your application will be published on the App Store.
     #[cfg(target_os = "macos")]
     fn make_transparent(&self) -> Result<()> {
         use cocoa::{
@@ -276,6 +280,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R, DecorumPluginConfig> {
 
             let merged_config = config.merged();
 
+            // TODO: Remove
             #[cfg(debug_assertions)]
             {
                 println!("DECORUM-CONFIG: \n{:#?}", config.clone());

@@ -45,3 +45,27 @@ pub async fn set_window_buttons_inset<R: Runtime>(
         "This command is only supported on macOS."
     )))
 }
+
+#[tauri::command]
+pub async fn set_window_level<R: Runtime>(
+    window: WebviewWindow<R>,
+    level: u32,
+    target_label: Option<String>,
+) -> Result<()> {
+    #[cfg(target_os = "macos")]
+    {
+        let target = match target_label {
+            Some(label) => window
+                .get_webview_window(&label)
+                .ok_or_else(|| tauri::Error::WindowNotFound)?,
+            None => window,
+        };
+
+        target.set_window_level(crate::NSWindowLevel::from(level))
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    Err(tauri::Error::Anyhow(anyhow::anyhow!(
+        "This command is only supported on macOS."
+    )))
+}

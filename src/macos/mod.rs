@@ -24,6 +24,7 @@ pub fn update_window_controls_inset<R: Runtime>(window: &Window<R>) {
 }
 
 // TODO: Respect RTL display language
+// TODO: Update Height, consider supporting the scenario where the buttons are hidden by the system due to screen sharing of the window
 // https://developer.apple.com/documentation/appkit/nsapplication/1428556-userinterfacelayoutdirection?language=objc
 pub fn position_window_controls(ns_window_handle: UnsafeWindowHandle, x: f64, y: f64) {
     use cocoa::{
