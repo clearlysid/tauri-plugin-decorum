@@ -35,7 +35,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	console.log("DECORUM: Waiting for [data-tauri-decorum-tb] ...");
 
-	waitForElm("[data-tauri-decorum-tb]").then((tbEl) => {
+	// Add debounce function
+	const debounce = (func, delay) => {
+		let timeoutId;
+		return (...args) => {
+			clearTimeout(timeoutId);
+			timeoutId = setTimeout(() => func(...args), delay);
+		};
+	};
+
+	// Debounce the control creation
+	const debouncedCreateControls = debounce(() => {
+		const tbEl = document.querySelector("[data-tauri-decorum-tb]");
+		if (!tbEl) return;
+
+		// Check if controls already exist
+		if (tbEl.querySelector(".decorum-tb-btn")) {
+			console.log("DECORUM: Controls already exist. Skipping creation.");
+			return;
+		}
+
 		// Create button func
 		const createButton = (id) => {
 			const btn = document.createElement("button");
@@ -124,5 +143,23 @@ document.addEventListener("DOMContentLoaded", () => {
 				background-color: rgba(255,0,0,0.7) !important;
 			}
 		`;
+	});
+
+	// Use MutationObserver to watch for changes
+	const observer = new MutationObserver((mutations) => {
+		for (let mutation of mutations) {
+			if (mutation.type === 'childList') {
+				const tbEl = document.querySelector("[data-tauri-decorum-tb]");
+				if (tbEl) {
+					debouncedCreateControls();
+					break;
+				}
+			}
+		}
+	});
+
+	observer.observe(document.body, {
+		childList: true,
+		subtree: true,
 	});
 });
