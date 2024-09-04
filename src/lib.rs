@@ -4,6 +4,9 @@ use tauri::{Emitter, Error, Listener, Runtime, WebviewWindow};
 #[cfg(target_os = "macos")]
 mod traffic;
 
+#[cfg(target_os = "linux")]
+mod dconf;
+
 mod commands;
 
 #[cfg(target_os = "macos")]
@@ -39,6 +42,71 @@ impl<'a> WebviewWindowExt for WebviewWindow {
 
             win2.eval(script_tb)
                 .unwrap_or_else(|e| println!("decorum error: {:?}", e));
+
+            // Custom window controls for linux
+            #[cfg(target_os = "linux")]
+            {
+                use linicon::{lookup_icon, IconType};
+                use std::io::prelude::*;
+                let mut control_script = include_str!("./js/linux-controls.js").to_string();
+
+                let mut controls = Vec::new();
+                if win2.is_minimizable().unwrap_or(false) {
+                    controls.push("minimize".to_string());
+                }
+
+                if win2.is_maximizable().unwrap_or(false) && win2.is_resizable().unwrap_or(false) {
+                    controls.push("maximize".to_string());
+                }
+
+                if win2.is_closable().unwrap_or(false) {
+                    controls.push("close".to_string());
+                }
+
+                controls.push("restore".to_string());
+
+                for control in controls.iter() {
+                    if let Some(Ok(control_icon)) =
+                        lookup_icon(format!("window-{}-symbolic", control))
+                            .into_iter()
+                            .find(|icon| match icon {
+                                Ok(icon) => icon.icon_type == IconType::SVG,
+                                Err(_) => false,
+                            })
+                    {
+                        let mut icon_data = String::new();
+                        let mut f = std::fs::File::open(control_icon.path).unwrap();
+                        let _ = f.read_to_string(&mut icon_data);
+
+                        control_script =
+                            control_script.replace(&format!("@win-{}", control), &icon_data);
+                    };
+                }
+
+                controls.remove(controls.len() - 1);
+
+                // return this string style 'appmenu:minimize,maximize,close'
+                if let Ok(app_menu_config) =
+                    dconf::read("/org/gnome/desktop/wm/preferences/button-layout")
+                {
+                    controls = app_menu_config
+                        .trim_start_matches("appmenu:")
+                        .split(',')
+                        .map(|x| x.to_string())
+                        .collect::<Vec<String>>();
+                    eprintln!("{controls:?}");
+                };
+
+                let controls = format!("{:?}", controls);
+
+                let control_script = control_script.replacen(
+                    "[\"minimize\", \"maximize\", \"close\"]",
+                    &controls,
+                    1,
+                );
+
+                win2.eval(&control_script).expect("couldn't run js");
+            }
 
             // On Windows, create custom window controls
             #[cfg(target_os = "windows")]

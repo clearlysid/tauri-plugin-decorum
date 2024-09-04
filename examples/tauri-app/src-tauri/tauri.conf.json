@@ -21,7 +21,8 @@
         "width": 600,
         "height": 400,
         "titleBarStyle": "Overlay",
-        "hiddenTitle": true
+        "hiddenTitle": true,
+        "decorations": false
       }
     ]
   },
@@ -37,3 +38,4 @@
     ]
   }
 }
+
