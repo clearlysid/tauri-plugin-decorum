@@ -94,7 +94,6 @@ impl<'a> WebviewWindowExt for WebviewWindow {
                         .split(',')
                         .map(|x| x.to_string())
                         .collect::<Vec<String>>();
-                    eprintln!("{controls:?}");
                 };
 
                 let controls = format!("{:?}", controls);
