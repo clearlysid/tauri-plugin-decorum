@@ -179,7 +179,7 @@ impl<'a> WebviewWindowExt for WebviewWindow {
 
         // Make webview background transparent
         self.with_webview(|webview| unsafe {
-            let id = webview.inner();
+            let id = webview.inner() as *mut objc::runtime::Object;
             let no: id = msg_send![class!(NSNumber), numberWithBool:0];
             let _: id =
                 msg_send![id, setValue:no forKey: NSString::alloc(nil).init_str("drawsBackground")];
