@@ -1,6 +1,6 @@
 [package]
 name = "tauri-plugin-decorum"
-version = "1.1.0"
+version = "1.1.1"
 authors = ["Siddharth <siddharth99c@gmail.com>"]
 description = "Opnionated window decoration controls for Tauri apps."
 edition = "2021"
