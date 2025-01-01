@@ -57,6 +57,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 		// Create button func
 		const createButton = (id) => {
+			const btn = document.createElement("button");
+			
 			btn.id = "decorum-tb-" + id;
 			btn.style.width = "58px";
 			btn.style.height = "32px";
