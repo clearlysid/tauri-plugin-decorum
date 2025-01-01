@@ -57,14 +57,42 @@ document.addEventListener("DOMContentLoaded", () => {
 
 		// Create button func
 		const createButton = (id) => {
-			const btn = document.createElement("button");
 			btn.id = "decorum-tb-" + id;
-			btn.classList.add("decorum-tb-btn");
+			btn.style.width = "58px";
+			btn.style.height = "32px";
+			btn.style.border = "none";
+			btn.style.padding = "0px";
+			btn.style.outline = "none";
+			btn.style.display = "flex";
+			btn.style.fontSize = "10px";
+			btn.style.fontWeight = "300";
+			btn.style.cursor = "default";
+			btn.style.boxShadow = "none";
+			btn.style.borderRadius = "0px";
+			btn.style.alignItems = "center";
+			btn.style.justifyContent = "center";
+			btn.style.transition = "background 0.1s";
+			btn.style.backgroundColor = "transparent";
+			btn.style.textRendering = "optimizeLegibility";
+			btn.style.fontFamily = "'Segoe Fluent Icons', 'Segoe MDL2 Assets'"
 
 			let timer;
 			const show_snap_overlay = () => {
 				win.setFocus().then(() => invoke("plugin:decorum|show_snap_overlay"));
 			};
+
+			// Setup hover events
+			btn.addEventListener("mouseenter", () => {
+				if (id === "close") {
+					btn.style.backgroundColor = "rgba(255,0,0,0.7)"
+				} else {
+					btn.style.backgroundColor = "rgba(0,0,0,0.2)"
+				}
+			});
+
+			btn.addEventListener("mouseleave", () => {
+				btn.style.backgroundColor = "transparent"
+			});
 
 			switch (id) {
 				case "minimize":
@@ -109,40 +137,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		// Before eval-ing, the line below is modified from the rust side
 		// to only include the controls that are enabled on the window
 		["minimize", "maximize", "close"].forEach(createButton);
-
-		const style = document.createElement("style");
-		document.head.appendChild(style);
-
-		style.innerHTML = `
-			.decorum-tb-btn {
-				cursor: default;
-				width: 58px;
-				height: 32px;
-				border: none;
-				padding: 0px;
-				outline: none;
-				display: flex;
-				font-size: 10px;
-				font-weight: 300;
-				box-shadow: none;
-				border-radius: 0;
-				align-items: center;
-				justify-content: center;
-				transition: background 0.1s;
-				background-color: transparent;
-				text-rendering: optimizeLegibility;
-				-webkit-font-smoothing: antialiased;
-				font-family: 'Segoe Fluent Icons', 'Segoe MDL2 Assets';
-			}
-
-			.decorum-tb-btn:hover {
-				background-color: rgba(0,0,0,0.2);
-			}
-
-			#decorum-tb-close:hover {
-				background-color: rgba(255,0,0,0.7) !important;
-			}
-		`;
 	});
 
 	// Use MutationObserver to watch for changes
