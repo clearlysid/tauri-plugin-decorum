@@ -145,7 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		`;
 	});
 
-	// Simplly use while to work with Preact
+	// Simply use while to work with Preact
 	while (!document.querySelector("[data-tauri-decorum-tb]")) { }
 
 	debouncedCreateControls()
