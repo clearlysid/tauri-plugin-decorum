@@ -56,17 +56,24 @@ fn main() {
 			let main_window = app.get_webview_window("main").unwrap();
 			main_window.create_overlay_titlebar().unwrap();
 
+			// If you want to use the titlebar you made via a div, you can do this:
+			// Firstly, you should add data-tauri-decorum-tb selector to the header div.
+			// Such as: `<div data-tauri-decorum-tb>...</div>`
+			// Then you can use this method to set the titlebar to that div.
+			main_window.create_custom_titlebar().unwrap();
+			// Additionally, you should custom buttons with css.
+
 			// Some macOS-specific helpers
 			#[cfg(target_os = "macos")] {
 				// Set a custom inset to the traffic lights
 				main_window.set_traffic_lights_inset(12.0, 16.0).unwrap();
 
 				// Make window transparent without privateApi
-				main_window.make_transparent().unwrap()
+				main_window.make_transparent().unwrap();
 
 				// Set window level
 				// NSWindowLevel: https://developer.apple.com/documentation/appkit/nswindowlevel
-				main_window.set_window_level(25).unwrap()
+				main_window.set_window_level(25).unwrap();
 			}
 
 			Ok(())

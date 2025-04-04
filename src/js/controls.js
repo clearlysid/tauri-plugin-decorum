@@ -140,7 +140,17 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 
 			#decorum-tb-close:hover {
-				background-color: rgba(255,0,0,0.7) !important;
+				background-color: #C42B1C !important;
+				color: white;
+			}
+
+			@media (prefers-color-scheme: dark) {
+				.decorum-tb-btn {
+					color: white;
+				}
+				.decorum-tb-btn:hover {
+					background-color: rgba(255, 255, 255, 0.2);
+				}
 			}
 		`;
 	});

@@ -17,3 +17,4 @@ dist-js
 dist
 
 examples/tauri-app/pnpm-lock.yaml
+pnpm-lock.yaml
