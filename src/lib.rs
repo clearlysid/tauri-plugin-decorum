@@ -1,5 +1,5 @@
 use tauri::plugin::{Builder, TauriPlugin};
-use tauri::{Emitter, Error, Listener, Runtime, WebviewWindow};
+use tauri::{Emitter, Error, Event, Listener, Runtime, WebviewWindow};
 
 #[cfg(target_os = "macos")]
 mod traffic;
@@ -16,6 +16,7 @@ extern crate objc;
 /// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the decorum APIs.
 pub trait WebviewWindowExt {
     fn create_overlay_titlebar(&self) -> Result<&WebviewWindow, Error>;
+    fn create_custom_titlebar(&self) -> Result<&WebviewWindow, Error>;
     #[cfg(target_os = "macos")]
     fn set_traffic_lights_inset(&self, x: f32, y: f32) -> Result<&WebviewWindow, Error>;
     #[cfg(target_os = "macos")]
@@ -35,117 +36,29 @@ impl<'a> WebviewWindowExt for WebviewWindow {
         let win2 = self.clone();
 
         self.listen("decorum-page-load", move |_event| {
-            // println!("decorum-page-load event received")
+            // println!("decorum-page-load event received");
 
             // Create a transparent draggable area for the titlebar
             let script_tb = include_str!("js/titlebar.js");
 
             win2.eval(script_tb)
                 .unwrap_or_else(|e| println!("decorum error: {:?}", e));
+            create_controls(&win2, _event);
+        });
 
-            // Custom window controls for linux
-            #[cfg(target_os = "linux")]
-            {
-                use linicon::{lookup_icon, IconType};
-                use std::io::prelude::*;
-                let mut control_script = include_str!("./js/linux-controls.js").to_string();
+        Ok(self)
+    }
+    
+    /// You should add data-tauri-decorum-tb to your custom titlebar element first.
+    fn create_custom_titlebar(&self) -> Result<&WebviewWindow, Error> {
+        #[cfg(target_os = "windows")]
+        self.set_decorations(false)?;
 
-                let mut controls = Vec::new();
-                if win2.is_minimizable().unwrap_or(false) {
-                    controls.push("minimize".to_string());
-                }
+        let win2 = self.clone();
 
-                if win2.is_maximizable().unwrap_or(false) && win2.is_resizable().unwrap_or(false) {
-                    controls.push("maximize".to_string());
-                }
-
-                if win2.is_closable().unwrap_or(false) {
-                    controls.push("close".to_string());
-                }
-
-                controls.push("restore".to_string());
-
-                for control in controls.iter() {
-                    if let Some(Ok(control_icon)) =
-                        lookup_icon(format!("window-{}-symbolic", control))
-                            .into_iter()
-                            .find(|icon| match icon {
-                                Ok(icon) => icon.icon_type == IconType::SVG,
-                                Err(_) => false,
-                            })
-                    {
-                        let mut icon_data = String::new();
-                        let mut f = std::fs::File::open(control_icon.path).unwrap();
-                        let _ = f.read_to_string(&mut icon_data);
-
-                        control_script =
-                            control_script.replace(&format!("@win-{}", control), &icon_data);
-                    };
-                }
-
-                controls.remove(controls.len() - 1);
-
-                // return this string style 'appmenu:minimize,maximize,close'
-                if let Ok(app_menu_config) =
-                    dconf::read("/org/gnome/desktop/wm/preferences/button-layout")
-                {
-                    controls = app_menu_config
-                        .trim_start_matches("appmenu:")
-                        .split(',')
-                        .map(|x| x.to_string())
-                        .collect::<Vec<String>>();
-                };
-
-                let controls = format!("{:?}", controls);
-
-                let control_script = control_script.replacen(
-                    "[\"minimize\", \"maximize\", \"close\"]",
-                    &controls,
-                    1,
-                );
-
-                win2.eval(&control_script).expect("couldn't run js");
-            }
-
-            // On Windows, create custom window controls
-            #[cfg(target_os = "windows")]
-            {
-                let mut controls = Vec::new();
-
-                if win2.is_minimizable().unwrap_or(false) {
-                    controls.push("minimize");
-                }
-
-                if win2.is_maximizable().unwrap_or(false) && win2.is_resizable().unwrap_or(false) {
-                    controls.push("maximize");
-                }
-
-                if win2.is_closable().unwrap_or(false) {
-                    controls.push("close");
-                }
-
-                let script_controls = include_str!("js/controls.js");
-                let controls = format!("{:?}", controls);
-
-                // this line finds ["minimize", "maximize", "close"] in the file
-                // and replaces it with only the controls enabled for the window
-                let script_controls = script_controls.replacen(
-                    "[\"minimize\", \"maximize\", \"close\"]",
-                    &controls,
-                    1,
-                );
-
-                win2.eval(script_controls.as_str())
-                    .expect("couldn't run js");
-
-                let win3 = win2.clone();
-                win2.on_window_event(move |eve| match eve {
-                    tauri::WindowEvent::CloseRequested { .. } => {
-                        win3.unlisten(_event.id());
-                    }
-                    _ => {}
-                });
-            }
+        self.listen("decorum-page-load", move |_event| {
+            // println!("decorum-page-load event received");
+            create_controls(&win2, _event);
         });
 
         Ok(self)
@@ -258,5 +171,102 @@ where
                 Err(e) => Err(e),
             }
         }
+    }
+}
+
+fn create_controls(win2: &WebviewWindow, _event: Event) {
+    // Custom window controls for linux
+    #[cfg(target_os = "linux")]
+    {
+        use linicon::{lookup_icon, IconType};
+        use std::io::prelude::*;
+        let mut control_script = include_str!("./js/linux-controls.js").to_string();
+
+        let mut controls = Vec::new();
+        if win2.is_minimizable().unwrap_or(false) {
+            controls.push("minimize".to_string());
+        }
+
+        if win2.is_maximizable().unwrap_or(false) && win2.is_resizable().unwrap_or(false) {
+            controls.push("maximize".to_string());
+        }
+
+        if win2.is_closable().unwrap_or(false) {
+            controls.push("close".to_string());
+        }
+
+        controls.push("restore".to_string());
+
+        for control in controls.iter() {
+            if let Some(Ok(control_icon)) = lookup_icon(format!("window-{}-symbolic", control))
+                .into_iter()
+                .find(|icon| match icon {
+                    Ok(icon) => icon.icon_type == IconType::SVG,
+                    Err(_) => false,
+                })
+            {
+                let mut icon_data = String::new();
+                let mut f = std::fs::File::open(control_icon.path).unwrap();
+                let _ = f.read_to_string(&mut icon_data);
+
+                control_script = control_script.replace(&format!("@win-{}", control), &icon_data);
+            };
+        }
+
+        controls.remove(controls.len() - 1);
+
+        // return this string style 'appmenu:minimize,maximize,close'
+        if let Ok(app_menu_config) = dconf::read("/org/gnome/desktop/wm/preferences/button-layout")
+        {
+            controls = app_menu_config
+                .trim_start_matches("appmenu:")
+                .split(',')
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>();
+        };
+
+        let controls = format!("{:?}", controls);
+
+        let control_script =
+            control_script.replacen("[\"minimize\", \"maximize\", \"close\"]", &controls, 1);
+
+        win2.eval(&control_script).expect("couldn't run js");
+    }
+
+    // On Windows, create custom window controls
+    #[cfg(target_os = "windows")]
+    {
+        let mut controls = Vec::new();
+
+        if win2.is_minimizable().unwrap_or(false) {
+            controls.push("minimize");
+        }
+
+        if win2.is_maximizable().unwrap_or(false) && win2.is_resizable().unwrap_or(false) {
+            controls.push("maximize");
+        }
+
+        if win2.is_closable().unwrap_or(false) {
+            controls.push("close");
+        }
+
+        let script_controls = include_str!("js/controls.js");
+        let controls = format!("{:?}", controls);
+
+        // this line finds ["minimize", "maximize", "close"] in the file
+        // and replaces it with only the controls enabled for the window
+        let script_controls =
+            script_controls.replacen("[\"minimize\", \"maximize\", \"close\"]", &controls, 1);
+
+        win2.eval(script_controls.as_str())
+            .expect("couldn't run js");
+
+        let win3 = win2.clone();
+        win2.on_window_event(move |eve| match eve {
+            tauri::WindowEvent::CloseRequested { .. } => {
+                win3.unlisten(_event.id());
+            }
+            _ => {}
+        });
     }
 }
