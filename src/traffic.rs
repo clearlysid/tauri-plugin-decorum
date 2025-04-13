@@ -54,6 +54,8 @@ pub fn position_traffic_lights(ns_window_handle: UnsafeWindowHandle, x: f64, y: 
 #[derive(Debug)]
 struct WindowState<R: Runtime> {
     window: Window<R>,
+    traffic_light_x: f64,
+    traffic_light_y: f64,
 }
 
 #[cfg(target_os = "macos")]
@@ -115,8 +117,8 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                     #[cfg(target_os = "macos")]
                     position_traffic_lights(
                         UnsafeWindowHandle(id as *mut std::ffi::c_void),
-                        WINDOW_CONTROL_PAD_X,
-                        WINDOW_CONTROL_PAD_Y,
+                        state.traffic_light_x,
+                        state.traffic_light_y,
                     );
                 });
 
@@ -246,8 +248,8 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                     let id = state.window.ns_window().expect("Failed to emit event") as id;
                     position_traffic_lights(
                         UnsafeWindowHandle(id as *mut std::ffi::c_void),
-                        WINDOW_CONTROL_PAD_X,
-                        WINDOW_CONTROL_PAD_Y,
+                        state.traffic_light_x,
+                        state.traffic_light_y,
                     );
                 });
 
@@ -309,7 +311,11 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
         // Are we deallocing this properly ? (I miss safe Rust :(  )
         let window_label = window.label().to_string();
 
-        let app_state = WindowState { window };
+        let app_state = WindowState { 
+            window,
+            traffic_light_x: WINDOW_CONTROL_PAD_X,
+            traffic_light_y: WINDOW_CONTROL_PAD_Y,
+        };
         let app_box = Box::into_raw(Box::new(app_state)) as *mut c_void;
         let random_str: String = rand::thread_rng()
             .sample_iter(&Alphanumeric)
@@ -347,5 +353,37 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             (effectiveAppearanceDidChange:) => on_effective_appearance_did_change as extern fn(&Object, Sel, id),
             (effectiveAppearanceDidChangedOnMainThread:) => on_effective_appearance_did_changed_on_main_thread as extern fn(&Object, Sel, id)
         }))
+    }
+}
+
+#[cfg(target_os = "macos")]
+pub fn update_traffic_light_positions(window: &tauri::WebviewWindow, x: f64, y: f64) {
+    use objc::runtime::Object;
+    use std::ffi::c_void;
+    use tauri::Wry;
+    
+    unsafe {
+        let ns_win = match window.ns_window() {
+            Ok(win) => win as cocoa::base::id,
+            Err(_) => return,
+        };
+        
+        let delegate: *mut Object = msg_send![ns_win, delegate];
+        if delegate.is_null() {
+            return;
+        }
+        
+        // Try to access the ivar directly with proper type annotation
+        let app_box: *mut c_void = match std::panic::catch_unwind(|| {
+            *(*delegate).get_ivar::<*mut c_void>("app_box")
+        }) {
+            Ok(ptr) if !ptr.is_null() => ptr,
+            _ => return, // Either the ivar doesn't exist or it's null
+        };
+        
+        // Specify Wry as the concrete runtime type
+        let state: &mut WindowState<Wry> = &mut *(app_box as *mut WindowState<Wry>);
+        state.traffic_light_x = x;
+        state.traffic_light_y = y;
     }
 }
