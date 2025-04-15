@@ -145,8 +145,29 @@ document.addEventListener("DOMContentLoaded", () => {
 		`;
 	});
 
-	// Simply use while to work with Preact
-	while (!document.querySelector("[data-tauri-decorum-tb]")) { }
+	// Use MutationObserver to watch for changes
+	const observer = new MutationObserver((mutations) => {
+		for (let mutation of mutations) {
+			if (mutation.type === 'childList') {
+				const tbEl = document.querySelector("[data-tauri-decorum-tb]");
+				if (tbEl) {
+					debouncedCreateControls();
+					break;
+				}
+			}
+		}
+	});
+
+	// data-tauri-decorum-tb may be created before observer starts
+	if (document.querySelector("[data-tauri-decorum-tb]")) {
+		debouncedCreateControls();
+		return;
+	};
+
+	observer.observe(document.body, {
+		childList: true,
+		subtree: true,
+	});
 
 	debouncedCreateControls()
 });
