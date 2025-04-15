@@ -154,8 +154,16 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	});
 
+	// data-tauri-decorum-tb may be created before observer starts
+	if (document.querySelector("[data-tauri-decorum-tb]")) {
+		debouncedCreateControls();
+		return;
+	};
+
 	observer.observe(document.body, {
 		childList: true,
 		subtree: true,
 	});
+
+	debouncedCreateControls()
 });
