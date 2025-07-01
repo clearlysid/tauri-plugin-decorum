@@ -10,6 +10,9 @@ document.addEventListener("DOMContentLoaded", () => {
 		// Create titlebar element
 		tbEl = document.createElement("div");
 		tbEl.setAttribute("data-tauri-decorum-tb", "");
+		tbEl.setAttribute("role", "group");
+		tbEl.setAttribute("lang", "en");
+		tbEl.setAttribute("aria-label", "Window controls");
 		tbEl.style.top = 0;
 		tbEl.style.left = 0;
 		tbEl.style.zIndex = 100;
@@ -30,6 +33,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		tbEl.appendChild(drag);
 
 		// add tbEl to the body
-		document.body.appendChild(tbEl);
+		document.body.prepend(tbEl);
 	}
 });
