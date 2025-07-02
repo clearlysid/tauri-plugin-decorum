@@ -58,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		// Create button func
 		const createButton = (id) => {
 			const btn = document.createElement("button");
-			
+
 			btn.id = "decorum-tb-" + id;
 			btn.style.width = "58px";
 			btn.style.height = "32px";
@@ -76,29 +76,31 @@ document.addEventListener("DOMContentLoaded", () => {
 			btn.style.transition = "background 0.1s";
 			btn.style.backgroundColor = "transparent";
 			btn.style.textRendering = "optimizeLegibility";
-			btn.style.fontFamily = "'Segoe Fluent Icons', 'Segoe MDL2 Assets'"
+			btn.style.fontFamily = "'Segoe Fluent Icons', 'Segoe MDL2 Assets'";
 
 			let timer;
 			const show_snap_overlay = () => {
-				win.setFocus().then(() => invoke("plugin:decorum|show_snap_overlay"));
+				win.setFocus().then(() =>
+					invoke("plugin:decorum|show_snap_overlay")
+				);
 			};
 
 			// Setup hover events
 			btn.addEventListener("mouseenter", () => {
 				if (id === "close") {
-					btn.style.backgroundColor = "rgba(255,0,0,0.7)"
+					btn.style.backgroundColor = "rgba(255,0,0,0.7)";
 				} else {
-					btn.style.backgroundColor = "rgba(0,0,0,0.2)"
+					btn.style.backgroundColor = "rgba(0,0,0,0.2)";
 				}
 			});
 
 			btn.addEventListener("mouseleave", () => {
-				btn.style.backgroundColor = "transparent"
+				btn.style.backgroundColor = "transparent";
 			});
-
 			switch (id) {
 				case "minimize":
 					btn.innerHTML = "\uE921";
+					btn.setAttribute("aria-label", "Minimize window");
 
 					btn.addEventListener("click", () => {
 						clearTimeout(timer);
@@ -108,12 +110,21 @@ document.addEventListener("DOMContentLoaded", () => {
 					break;
 				case "maximize":
 					btn.innerHTML = "\uE922";
+					btn.setAttribute("aria-label", "Maximize window");
 					win.onResized(() => {
 						win.isMaximized().then((maximized) => {
 							if (maximized) {
 								btn.innerHTML = "\uE923";
+								btn.setAttribute(
+									"aria-label",
+									"Restore window size"
+								);
 							} else {
 								btn.innerHTML = "\uE922";
+								btn.setAttribute(
+									"aria-label",
+									"Maximize window size"
+								);
 							}
 						});
 					});
@@ -122,13 +133,16 @@ document.addEventListener("DOMContentLoaded", () => {
 						clearTimeout(timer);
 						win.toggleMaximize();
 					});
-					btn.addEventListener("mouseleave", () => clearTimeout(timer));
+					btn.addEventListener("mouseleave", () =>
+						clearTimeout(timer)
+					);
 					btn.addEventListener("mouseenter", () => {
 						timer = setTimeout(show_snap_overlay, 620);
 					});
 					break;
 				case "close":
 					btn.innerHTML = "\uE8BB";
+					btn.setAttribute("aria-label", "Close window");
 					btn.addEventListener("click", () => win.close());
 					break;
 			}
@@ -144,7 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	// Use MutationObserver to watch for changes
 	const observer = new MutationObserver((mutations) => {
 		for (let mutation of mutations) {
-			if (mutation.type === 'childList') {
+			if (mutation.type === "childList") {
 				const tbEl = document.querySelector("[data-tauri-decorum-tb]");
 				if (tbEl) {
 					debouncedCreateControls();
@@ -158,12 +172,12 @@ document.addEventListener("DOMContentLoaded", () => {
 	if (document.querySelector("[data-tauri-decorum-tb]")) {
 		debouncedCreateControls();
 		return;
-	};
+	}
 
 	observer.observe(document.body, {
 		childList: true,
 		subtree: true,
 	});
 
-	debouncedCreateControls()
+	debouncedCreateControls();
 });
