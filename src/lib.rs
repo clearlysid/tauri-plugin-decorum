@@ -65,45 +65,51 @@ impl<'a> WebviewWindowExt for WebviewWindow {
 
                 controls.push("restore".to_string());
 
-                for control in controls.iter() {
-                    if let Some(Ok(control_icon)) =
-                        lookup_icon(format!("window-{}-symbolic", control))
-                            .into_iter()
-                            .find(|icon| match icon {
-                                Ok(icon) => icon.icon_type == IconType::SVG,
-                                Err(_) => false,
-                            })
-                    {
-                        let mut icon_data = String::new();
-                        let mut f = std::fs::File::open(control_icon.path).unwrap();
-                        let _ = f.read_to_string(&mut icon_data);
+                // Add KDE icon names
+                let kde_icon_names = vec![
+                    ("close", vec!["window-close", "dialog-close"]),
+                    ("minimize", vec!["window-minimize", "window-lower"]),
+                    ("maximize", vec!["window-maximize", "window-expand"]),
+                    ("restore", vec!["window-restore", "window-return"])
+                ];
 
-                        control_script =
-                            control_script.replace(&format!("@win-{}", control), &icon_data);
-                    };
+                for (control, icon_names) in kde_icon_names {
+                    let mut found = false;
+                    for icon_name in icon_names {
+                        // Try GNOME-style naming first
+                        let mut control_icon = lookup_icon(format!("{}-symbolic", icon_name))
+                            .find(|icon| matches!(icon, Ok(icon) if icon.icon_type == IconType::SVG));
+
+                        // If not found, try KDE-style naming
+                        if control_icon.is_none() {
+                            control_icon = lookup_icon(icon_name)
+                                .find(|icon| matches!(icon, Ok(icon) if icon.icon_type == IconType::SVG));
+                        }
+
+                        if let Some(Ok(icon)) = control_icon {
+                            let mut icon_data = String::new();
+                            if let Ok(mut f) = std::fs::File::open(icon.path) {
+                                if f.read_to_string(&mut icon_data).is_ok() {
+                                    control_script = control_script.replace(&format!("@win-{}", control), &icon_data);
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Fallback icons if none found
+                    if !found {
+                        let fallback = match control {
+                            "close" => r#"<svg viewBox="0 0 16 16"><path d="M12.72 3.293a1 1 0 00-1.415 0L8.012 6.586 4.72 3.293a1 1 0 00-1.414 1.414L6.598 8 3.305 11.293a1 1 0 101.414 1.414l3.293-3.293 3.293 3.293a1 1 0 001.414-1.414L9.426 8l3.293-3.293a1 1 0 000-1.414z"/></svg>"#,
+                            "minimize" => r#"<svg viewBox="0 0 16 16"><path d="M14 8v1H2V8h12z"/></svg>"#,
+                            "maximize" => r#"<svg viewBox="0 0 16 16"><path d="M3 3v10h10V3H3zm9 9H4V4h8v8z"/></svg>"#,
+                            "restore" => r#"<svg viewBox="0 0 16 16"><path d="M3 5v8h8V5H3zm7 7H4V6h6v6z M6 3h7v7h-1V4H6V3z"/></svg>"#,
+                            _ => ""
+                        };
+                        control_script = control_script.replace(&format!("@win-{}", control), fallback);
+                    }
                 }
-
-                controls.remove(controls.len() - 1);
-
-                // return this string style 'appmenu:minimize,maximize,close'
-                if let Ok(app_menu_config) =
-                    dconf::read("/org/gnome/desktop/wm/preferences/button-layout")
-                {
-                    controls = app_menu_config
-                        .trim_start_matches("appmenu:")
-                        .split(',')
-                        .map(|x| x.to_string())
-                        .collect::<Vec<String>>();
-                };
-
-                let controls = format!("{:?}", controls);
-
-                let control_script = control_script.replacen(
-                    "[\"minimize\", \"maximize\", \"close\"]",
-                    &controls,
-                    1,
-                );
-
                 win2.eval(&control_script).expect("couldn't run js");
             }
 

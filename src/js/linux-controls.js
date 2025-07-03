@@ -58,6 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const btn = document.createElement("button");
       btn.id = "decorum-tb-" + id;
       btn.classList.add("decorum-tb-btn");
+      let timer;
 
       switch (id) {
         case "minimize":
