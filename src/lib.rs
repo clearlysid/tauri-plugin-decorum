@@ -217,7 +217,7 @@ impl<'a> WebviewWindowExt for WebviewWindow {
             let id = webview.inner() as *mut objc::runtime::Object;
             let no: id = msg_send![class!(NSNumber), numberWithBool:0];
             let _: id =
-                msg_send![id, setValue:no forKey: NSString::alloc(nil).init_str("drawsBackground")];
+                msg_send![id, setValue:no forKey: NSString::from_str("drawsBackground")];
         })?;
 
         Ok(self)
