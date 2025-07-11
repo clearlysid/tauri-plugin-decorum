@@ -21,6 +21,8 @@ pub trait WebviewWindowExt {
     #[cfg(target_os = "macos")]
     fn make_transparent(&self) -> Result<&WebviewWindow, Error>;
     #[cfg(target_os = "macos")]
+    fn make_webview_transparent(&self) -> Result<&WebviewWindow, Error>;
+    #[cfg(target_os = "macos")]
     fn set_window_level(&self, level: u32) -> Result<&WebviewWindow, Error>;
 }
 
@@ -199,6 +201,26 @@ impl<'a> WebviewWindowExt for WebviewWindow {
             }
             Ok(win)
         })
+    }
+
+    /// Set only the webview background to transparent (window remains opaque).
+    /// This allows for transparent webview content while maintaining window decorations.
+    #[cfg(target_os = "macos")]
+    fn make_webview_transparent(&self) -> Result<&WebviewWindow, Error> {
+        use cocoa::{
+            base::{id, nil},
+            foundation::NSString,
+        };
+
+        // Make only webview background transparent
+        self.with_webview(|webview| unsafe {
+            let id = webview.inner() as *mut objc::runtime::Object;
+            let no: id = msg_send![class!(NSNumber), numberWithBool:0];
+            let _: id =
+                msg_send![id, setValue:no forKey: NSString::alloc(nil).init_str("drawsBackground")];
+        })?;
+
+        Ok(self)
     }
 
     /// Set the window level.

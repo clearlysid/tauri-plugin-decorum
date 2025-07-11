@@ -9,6 +9,12 @@ function App() {
 				</a>
 			</div>
 			<p>Click on the Tauri logo to learn more.</p>
+			
+			<div className="transparent-demo">
+				<h2>Webview Transparency Demo</h2>
+				<p>This area demonstrates webview transparency.</p>
+				<p>The webview background is transparent, but the window remains opaque.</p>
+			</div>
 		</div>
 	);
 }
