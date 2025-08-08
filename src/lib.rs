@@ -162,7 +162,7 @@ impl<'a> WebviewWindowExt for WebviewWindow {
 
             // Store the custom position in the window state
             traffic::update_traffic_light_positions(win, x.into(), y.into());
-            
+
             // Apply the position immediately
             traffic::position_traffic_lights(ns_window_handle, x.into(), y.into());
 

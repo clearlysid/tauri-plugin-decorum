@@ -311,7 +311,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
         // Are we deallocing this properly ? (I miss safe Rust :(  )
         let window_label = window.label().to_string();
 
-        let app_state = WindowState { 
+        let app_state = WindowState {
             window,
             traffic_light_x: WINDOW_CONTROL_PAD_X,
             traffic_light_y: WINDOW_CONTROL_PAD_Y,
@@ -361,26 +361,25 @@ pub fn update_traffic_light_positions(window: &tauri::WebviewWindow, x: f64, y: 
     use objc::runtime::Object;
     use std::ffi::c_void;
     use tauri::Wry;
-    
+
     unsafe {
         let ns_win = match window.ns_window() {
             Ok(win) => win as cocoa::base::id,
             Err(_) => return,
         };
-        
+
         let delegate: *mut Object = msg_send![ns_win, delegate];
         if delegate.is_null() {
             return;
         }
-        
+
         // Try to access the ivar directly with proper type annotation
-        let app_box: *mut c_void = match std::panic::catch_unwind(|| {
-            *(*delegate).get_ivar::<*mut c_void>("app_box")
-        }) {
-            Ok(ptr) if !ptr.is_null() => ptr,
-            _ => return, // Either the ivar doesn't exist or it's null
-        };
-        
+        let app_box: *mut c_void =
+            match std::panic::catch_unwind(|| *(*delegate).get_ivar::<*mut c_void>("app_box")) {
+                Ok(ptr) if !ptr.is_null() => ptr,
+                _ => return, // Either the ivar doesn't exist or it's null
+            };
+
         // Specify Wry as the concrete runtime type
         let state: &mut WindowState<Wry> = &mut *(app_box as *mut WindowState<Wry>);
         state.traffic_light_x = x;
