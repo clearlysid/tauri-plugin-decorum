@@ -25,7 +25,20 @@ pub fn position_traffic_lights(ns_window_handle: UnsafeWindowHandle, x: f64, y: 
             ns_window.standardWindowButton_(NSWindowButton::NSWindowMiniaturizeButton);
         let zoom = ns_window.standardWindowButton_(NSWindowButton::NSWindowZoomButton);
 
-        let title_bar_container_view = close.superview().superview();
+        // Check if close button exists and has a valid superview
+        if close.is_null() {
+            return;
+        }
+        
+        let close_superview = close.superview();
+        if close_superview.is_null() {
+            return;
+        }
+        
+        let title_bar_container_view = close_superview.superview();
+        if title_bar_container_view.is_null() {
+            return;
+        }
 
         let close_rect: NSRect = msg_send![close, frame];
         let button_height = close_rect.size.height;
@@ -36,7 +49,22 @@ pub fn position_traffic_lights(ns_window_handle: UnsafeWindowHandle, x: f64, y: 
         title_bar_rect.origin.y = NSView::frame(ns_window).size.height - title_bar_frame_height;
         let _: () = msg_send![title_bar_container_view, setFrame: title_bar_rect];
 
-        let window_buttons = vec![close, miniaturize, zoom];
+        // Check if other buttons exist before using them
+        let mut window_buttons = Vec::new();
+        if !close.is_null() {
+            window_buttons.push(close);
+        }
+        if !miniaturize.is_null() {
+            window_buttons.push(miniaturize);
+        }
+        if !zoom.is_null() {
+            window_buttons.push(zoom);
+        }
+        
+        if window_buttons.is_empty() {
+            return;
+        }
+        
         let space_between = 20.0; // Fixed space between buttons
         let vertical_offset = 4.0; // Adjust this value to push buttons down
 
@@ -60,11 +88,25 @@ struct WindowState<R: Runtime> {
 
 #[cfg(target_os = "macos")]
 pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
-    use cocoa::appkit::NSWindow;
+    use cocoa::appkit::{NSWindow, NSWindowButton};
     use cocoa::base::{id, BOOL};
     use cocoa::foundation::NSUInteger;
     use objc::runtime::{Object, Sel};
     use std::ffi::c_void;
+
+    // Check if this window has traffic lights before setting up positioning
+    unsafe {
+        let ns_win = match window.ns_window() {
+            Ok(win) => win as id,
+            Err(_) => return,
+        };
+        
+        // Quick check: if close button doesn't exist, this window probably doesn't have decorations
+        let close = ns_win.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
+        if close.is_null() {
+            return;
+        }
+    }
 
     // Do the initial positioning
     position_traffic_lights(
