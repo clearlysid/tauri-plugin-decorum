@@ -15,7 +15,11 @@ fn main() {
             main_window.create_overlay_titlebar().unwrap();
 
             #[cfg(target_os = "macos")]
-            main_window.set_traffic_lights_inset(16.0, 20.0).unwrap();
+            {
+                main_window.set_traffic_lights_inset(20.0, 24.0).unwrap();
+                // Make only the webview transparent (window remains opaque)
+                main_window.make_webview_transparent().unwrap();
+            }
             Ok(())
         })
         .run(tauri::generate_context!())
