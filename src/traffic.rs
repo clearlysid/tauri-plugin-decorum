@@ -214,7 +214,6 @@ define_class!(
                 proposed_options
             }
         }
-
     }
 );
 
