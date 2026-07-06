@@ -1,11 +1,13 @@
-use std::cell::Cell;
-use std::ffi::c_void;
-use objc2::rc::Retained;
-use objc2::{define_class, msg_send, ClassType, DefinedClass, MainThreadMarker, MainThreadOnly};
-use objc2::runtime::{Bool, NSObject, ProtocolObject};
+use std::{cell::Cell, ffi::c_void};
+
+use objc2::{
+    define_class, msg_send,
+    rc::Retained,
+    runtime::{Bool, NSObject, ProtocolObject},
+    ClassType, DefinedClass, MainThreadMarker, MainThreadOnly,
+};
 use objc2_app_kit::{
-    NSApplicationPresentationOptions, NSButton, NSWindow,
-    NSWindowButton, NSWindowDelegate,
+    NSApplicationPresentationOptions, NSButton, NSWindow, NSWindowButton, NSWindowDelegate,
 };
 use objc2_foundation::{NSNotification, NSObjectProtocol};
 use tauri::{Emitter, Runtime, Window};
@@ -39,8 +41,12 @@ pub fn position_traffic_lights(ns_window: &NSWindow, x: f64, y: f64) {
 
     let mut window_buttons: Vec<Retained<NSButton>> = Vec::new();
     window_buttons.push(close);
-    if let Some(m) = miniaturize { window_buttons.push(m); }
-    if let Some(z) = zoom { window_buttons.push(z); }
+    if let Some(m) = miniaturize {
+        window_buttons.push(m);
+    }
+    if let Some(z) = zoom {
+        window_buttons.push(z);
+    }
 
     if window_buttons.is_empty() {
         return;
@@ -80,7 +86,9 @@ impl Drop for TrafficLightIvars {
     fn drop(&mut self) {
         let ptr = self.state_ptr.get();
         if !ptr.is_null() {
-            unsafe { drop(Box::from_raw(ptr as *mut WindowState<tauri::Wry>)); }
+            unsafe {
+                drop(Box::from_raw(ptr as *mut WindowState<tauri::Wry>));
+            }
         }
     }
 }
@@ -95,7 +103,11 @@ define_class!(
         #[unsafe(method(windowDidResize:))]
         fn windowDidResize(&self, notification: &NSNotification) {
             let ivars = self.ivars();
-            position_traffic_lights(&ivars.ns_window, ivars.traffic_light_x.get(), ivars.traffic_light_y.get());
+            position_traffic_lights(
+                &ivars.ns_window,
+                ivars.traffic_light_x.get(),
+                ivars.traffic_light_y.get(),
+            );
             if let Some(ref super_del) = ivars.super_delegate {
                 super_del.windowDidResize(notification);
             }
@@ -156,7 +168,11 @@ define_class!(
         fn windowDidExitFullScreen(&self, notification: &NSNotification) {
             emit_state_event(self, "did-exit-fullscreen");
             let ivars = self.ivars();
-            position_traffic_lights(&ivars.ns_window, ivars.traffic_light_x.get(), ivars.traffic_light_y.get());
+            position_traffic_lights(
+                &ivars.ns_window,
+                ivars.traffic_light_x.get(),
+                ivars.traffic_light_y.get(),
+            );
             if let Some(ref super_del) = ivars.super_delegate {
                 super_del.windowDidExitFullScreen(notification);
             }
@@ -266,7 +282,10 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
         Err(_) => return,
     };
 
-    if ns_window.standardWindowButton(NSWindowButton::CloseButton).is_none() {
+    if ns_window
+        .standardWindowButton(NSWindowButton::CloseButton)
+        .is_none()
+    {
         return;
     }
 
@@ -297,9 +316,13 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
 
 #[cfg(target_os = "macos")]
 pub fn update_traffic_light_positions(window: &tauri::WebviewWindow, x: f64, y: f64) {
-    let Ok(ns_win) = window.ns_window() else { return };
+    let Ok(ns_win) = window.ns_window() else {
+        return;
+    };
     let ns_window: &NSWindow = unsafe { &*(ns_win as *const NSWindow) };
-    let Some(delegate) = ns_window.delegate() else { return };
+    let Some(delegate) = ns_window.delegate() else {
+        return;
+    };
 
     let delegate_any: &objc2::runtime::AnyObject = delegate.as_ref();
     let delegate_class = delegate_any.class();

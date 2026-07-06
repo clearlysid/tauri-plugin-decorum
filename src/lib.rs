@@ -1,5 +1,7 @@
-use tauri::plugin::{Builder, TauriPlugin};
-use tauri::{Emitter, Error, Listener, Runtime, WebviewWindow};
+use tauri::{
+    plugin::{Builder, TauriPlugin},
+    Emitter, Error, Listener, Runtime, WebviewWindow,
+};
 
 #[cfg(target_os = "macos")]
 mod traffic;
@@ -42,8 +44,9 @@ impl<'a> WebviewWindowExt for WebviewWindow {
             // Custom window controls for linux
             #[cfg(target_os = "linux")]
             {
-                use linicon::{lookup_icon, IconType};
                 use std::io::prelude::*;
+
+                use linicon::{lookup_icon, IconType};
                 let mut control_script = include_str!("./js/linux-controls.js").to_string();
 
                 let mut controls = Vec::new();
@@ -160,7 +163,7 @@ impl<'a> WebviewWindowExt for WebviewWindow {
 
             // Store the custom position in the window state
             traffic::update_traffic_light_positions(win, x.into(), y.into());
-            
+
             // Apply the position immediately
             traffic::position_traffic_lights(ns_window, x.into(), y.into());
 
@@ -173,12 +176,9 @@ impl<'a> WebviewWindowExt for WebviewWindow {
     /// as it doesn't use the `transparent` flag or macOS Private APIs.
     #[cfg(target_os = "macos")]
     fn make_transparent(&self) -> Result<&WebviewWindow, Error> {
-        use objc2::{class, msg_send, ClassType};
-        use objc2::rc::Retained;
-        use objc2::runtime::NSObject;
+        use objc2::{class, msg_send, rc::Retained, runtime::NSObject, ClassType};
+        use objc2_app_kit::{NSColor, NSWindow};
         use objc2_foundation::NSString;
-        use objc2_app_kit::NSColor;
-        use objc2_app_kit::NSWindow;
 
         // Make webview background transparent
         self.with_webview(|webview| unsafe {
