@@ -215,53 +215,6 @@ define_class!(
             }
         }
 
-        #[unsafe(method(draggingEntered:))]
-        fn draggingEntered(&self, notification: &NSNotification) -> Bool {
-            if let Some(ref super_del) = self.ivars().super_delegate {
-                unsafe { msg_send![super_del, draggingEntered: notification] }
-            } else {
-                Bool::new(false)
-            }
-        }
-
-        #[unsafe(method(prepareForDragOperation:))]
-        fn prepareForDragOperation(&self, notification: &NSNotification) -> Bool {
-            if let Some(ref super_del) = self.ivars().super_delegate {
-                unsafe { msg_send![super_del, prepareForDragOperation: notification] }
-            } else {
-                Bool::new(false)
-            }
-        }
-
-        #[unsafe(method(performDragOperation:))]
-        fn performDragOperation(&self, sender: &NSWindow) -> Bool {
-            if let Some(ref super_del) = self.ivars().super_delegate {
-                unsafe { msg_send![super_del, performDragOperation: sender] }
-            } else {
-                Bool::new(false)
-            }
-        }
-
-        #[unsafe(method(concludeDragOperation:))]
-        fn concludeDragOperation(&self, notification: &NSNotification) {
-            if let Some(ref super_del) = self.ivars().super_delegate {
-                unsafe { msg_send![super_del, concludeDragOperation: notification] }
-            }
-        }
-
-        #[unsafe(method(draggingExited:))]
-        fn draggingExited(&self, notification: &NSNotification) {
-            if let Some(ref super_del) = self.ivars().super_delegate {
-                unsafe { msg_send![super_del, draggingExited: notification] }
-            }
-        }
-
-        #[unsafe(method(effectiveAppearanceDidChange:))]
-        fn effectiveAppearanceDidChange(&self, notification: &NSNotification) {
-            if let Some(ref super_del) = self.ivars().super_delegate {
-                unsafe { msg_send![super_del, effectiveAppearanceDidChange: notification] }
-            }
-        }
     }
 );
 
