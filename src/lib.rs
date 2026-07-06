@@ -9,10 +9,6 @@ mod dconf;
 
 mod commands;
 
-#[cfg(target_os = "macos")]
-#[macro_use]
-extern crate objc;
-
 /// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the decorum APIs.
 pub trait WebviewWindowExt {
     fn create_overlay_titlebar(&self) -> Result<&WebviewWindow, Error>;
@@ -156,15 +152,17 @@ impl<'a> WebviewWindowExt for WebviewWindow {
     /// This is only available on macOS.
     #[cfg(target_os = "macos")]
     fn set_traffic_lights_inset(&self, x: f32, y: f32) -> Result<&WebviewWindow, Error> {
+        use objc2_app_kit::NSWindow;
+
         ensure_main_thread(self, move |win| {
-            let ns_window = win.ns_window()?;
-            let ns_window_handle = traffic::UnsafeWindowHandle(ns_window);
+            let ns_win = win.ns_window()? as *mut objc2::runtime::NSObject;
+            let ns_window: &NSWindow = unsafe { &*(ns_win as *const NSWindow) };
 
             // Store the custom position in the window state
             traffic::update_traffic_light_positions(win, x.into(), y.into());
             
             // Apply the position immediately
-            traffic::position_traffic_lights(ns_window_handle, x.into(), y.into());
+            traffic::position_traffic_lights(ns_window, x.into(), y.into());
 
             Ok(win)
         })
@@ -175,27 +173,29 @@ impl<'a> WebviewWindowExt for WebviewWindow {
     /// as it doesn't use the `transparent` flag or macOS Private APIs.
     #[cfg(target_os = "macos")]
     fn make_transparent(&self) -> Result<&WebviewWindow, Error> {
-        use cocoa::{
-            appkit::NSColor,
-            base::{id, nil},
-            foundation::NSString,
-        };
+        use objc2::{class, msg_send, ClassType};
+        use objc2::rc::Retained;
+        use objc2::runtime::NSObject;
+        use objc2_foundation::NSString;
+        use objc2_app_kit::NSColor;
+        use objc2_app_kit::NSWindow;
 
         // Make webview background transparent
         self.with_webview(|webview| unsafe {
-            let id = webview.inner() as *mut objc::runtime::Object;
-            let no: id = msg_send![class!(NSNumber), numberWithBool:0];
-            let _: id =
-                msg_send![id, setValue:no forKey: NSString::alloc(nil).init_str("drawsBackground")];
+            let inner = webview.inner() as *mut objc2::runtime::NSObject;
+            let no: Retained<NSObject> = msg_send![class!(NSNumber), numberWithBool:0];
+            let key = NSString::from_str("drawsBackground");
+            let _: () = msg_send![inner, setValue:&*no forKey:&*key];
         })?;
 
         // Make window background transparent
         ensure_main_thread(self, move |win| {
-            let ns_win = win.ns_window()? as id;
+            let ns_win = win.ns_window()? as *mut objc2::runtime::NSObject;
+            let ns_window: &NSWindow = unsafe { &*(ns_win as *const NSWindow) };
             unsafe {
-                let win_bg_color =
-                    NSColor::colorWithSRGBRed_green_blue_alpha_(nil, 0.0, 0.0, 0.0, 0.0);
-                let _: id = msg_send![ns_win, setBackgroundColor: win_bg_color];
+                let win_bg_color: Retained<NSColor> =
+                    msg_send![NSColor::class(), colorWithSRGBRed:0.0 green:0.0 blue:0.0 alpha:0.0];
+                let _: () = msg_send![ns_window, setBackgroundColor: &*win_bg_color];
             }
             Ok(win)
         })
@@ -207,10 +207,14 @@ impl<'a> WebviewWindowExt for WebviewWindow {
     /// This is only available on macOS.
     #[cfg(target_os = "macos")]
     fn set_window_level(&self, level: u32) -> Result<&WebviewWindow, Error> {
+        use objc2::msg_send;
+        use objc2_app_kit::NSWindow;
+
         ensure_main_thread(self, move |win| {
-            let ns_win = win.ns_window()? as cocoa::base::id;
+            let ns_win = win.ns_window()? as *mut objc2::runtime::NSObject;
+            let ns_window: &NSWindow = unsafe { &*(ns_win as *const NSWindow) };
             unsafe {
-                let _: () = msg_send![ns_win, setLevel: level];
+                let _: () = msg_send![ns_window, setLevel: level];
             }
             Ok(win)
         })
@@ -228,7 +232,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
         })
         .on_window_ready(|_win| {
             #[cfg(target_os = "macos")]
-            traffic::setup_traffic_light_positioner(_win);
+            traffic::setup_traffic_light_positioner::<R>(_win);
             return;
         })
         .build()
