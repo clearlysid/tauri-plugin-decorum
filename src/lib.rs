@@ -185,7 +185,7 @@ impl<'a> WebviewWindowExt for WebviewWindow {
             let inner = webview.inner() as *mut objc2::runtime::NSObject;
             let no: Retained<NSObject> = msg_send![class!(NSNumber), numberWithBool:0];
             let key = NSString::from_str("drawsBackground");
-            let _: () = msg_send![inner, setValue:&*no forKey:&*key];
+            let _: () = msg_send![inner, setValue:&*no, forKey:&*key];
         })?;
 
         // Make window background transparent
@@ -194,7 +194,7 @@ impl<'a> WebviewWindowExt for WebviewWindow {
             let ns_window: &NSWindow = unsafe { &*(ns_win as *const NSWindow) };
             unsafe {
                 let win_bg_color: Retained<NSColor> =
-                    msg_send![NSColor::class(), colorWithSRGBRed:0.0 green:0.0 blue:0.0 alpha:0.0];
+                    msg_send![NSColor::class(), colorWithSRGBRed:0.0, green:0.0, blue:0.0, alpha:0.0];
                 let _: () = msg_send![ns_window, setBackgroundColor: &*win_bg_color];
             }
             Ok(win)

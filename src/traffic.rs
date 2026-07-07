@@ -3,7 +3,7 @@ use std::{cell::Cell, ffi::c_void};
 use objc2::{
     define_class, msg_send,
     rc::Retained,
-    runtime::{Bool, NSObject, ProtocolObject},
+    runtime::{NSObject, ProtocolObject},
     ClassType, DefinedClass, MainThreadMarker, MainThreadOnly,
 };
 use objc2_app_kit::{
@@ -66,8 +66,6 @@ pub fn position_traffic_lights(ns_window: &NSWindow, x: f64, y: f64) {
 #[cfg(target_os = "macos")]
 struct WindowState<R: Runtime> {
     window: Window<R>,
-    traffic_light_x: f64,
-    traffic_light_y: f64,
 }
 
 #[cfg(target_os = "macos")]
@@ -99,6 +97,7 @@ define_class!(
     #[ivars = TrafficLightIvars]
     pub struct TrafficLightDelegate;
 
+    #[allow(non_snake_case)]
     unsafe impl NSWindowDelegate for TrafficLightDelegate {
         #[unsafe(method(windowDidResize:))]
         fn windowDidResize(&self, notification: &NSNotification) {
@@ -245,11 +244,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
 
     let current_delegate = ns_window.delegate();
 
-    let state = WindowState {
-        window,
-        traffic_light_x: WINDOW_CONTROL_PAD_X,
-        traffic_light_y: WINDOW_CONTROL_PAD_Y,
-    };
+    let state = WindowState { window };
     let state_ptr = Box::into_raw(Box::new(state)) as *mut c_void;
 
     let mtm = unsafe { MainThreadMarker::new_unchecked() };
