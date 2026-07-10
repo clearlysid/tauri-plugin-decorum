@@ -193,8 +193,7 @@ impl<'a> WebviewWindowExt for WebviewWindow {
             let ns_win = win.ns_window()? as *mut objc2::runtime::NSObject;
             let ns_window: &NSWindow = unsafe { &*(ns_win as *const NSWindow) };
             unsafe {
-                let win_bg_color: Retained<NSColor> =
-                    msg_send![NSColor::class(), colorWithSRGBRed:0.0, green:0.0, blue:0.0, alpha:0.0];
+                let win_bg_color: Retained<NSColor> = msg_send![NSColor::class(), colorWithSRGBRed:0.0, green:0.0, blue:0.0, alpha:0.0];
                 let _: () = msg_send![ns_window, setBackgroundColor: &*win_bg_color];
             }
             Ok(win)
