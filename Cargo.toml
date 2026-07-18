@@ -12,7 +12,7 @@ homepage = "https://github.com/clearlysid/tauri-plugin-decorum"
 repository = "https://github.com/clearlysid/tauri-plugin-decorum"
 
 [dependencies]
-tauri = { version = "2.0.0-rc" }
+tauri = { version = "2.0.0-rc.6" }
 serde = "1.0"
 anyhow = "1.0"
 
@@ -32,4 +32,4 @@ enigo = "0.1.3"
 linicon = "2.3.0"
 
 [build-dependencies]
-tauri-plugin = { version = "2.0.0-rc", features = ["build"] }
+tauri-plugin = { version = "2.0.0-rc.6", features = ["build"] }
