@@ -65,7 +65,7 @@ pub fn position_traffic_lights(ns_window_handle: UnsafeWindowHandle, x: f64, y: 
             return;
         }
         
-        let space_between = 20.0; // Fixed space between buttons
+        let space_between = 23.0; // Fixed space between buttons (matches native NSWindow traffic light spacing, measured via Accessibility API on an unmodified titled window)
         let vertical_offset = 4.0; // Adjust this value to push buttons down
 
         for (i, button) in window_buttons.into_iter().enumerate() {
