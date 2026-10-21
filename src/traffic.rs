@@ -171,10 +171,18 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                 let _: () = msg_send![super_del, windowDidChangeBackingProperties: notification];
             }
         }
-        extern "C" fn on_window_did_become_key(this: &Object, _cmd: Sel, notification: id) {
+        extern "C" fn on_window_did_become_key<R: Runtime>(this: &Object, _cmd: Sel, notification: id) {
             unsafe {
                 let super_del: id = *this.get_ivar("super_delegate");
                 let _: () = msg_send![super_del, windowDidBecomeKey: notification];
+                with_window_state(this, |state: &mut WindowState<R>| {
+                    let id = state.window.ns_window().expect("NS window should exist when becoming key");
+                    position_traffic_lights(
+                        UnsafeWindowHandle(id),
+                        state.traffic_light_x,
+                        state.traffic_light_y,
+                    );
+                });
             }
         }
         extern "C" fn on_window_did_resign_key(this: &Object, _cmd: Sel, notification: id) {
@@ -365,7 +373,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             (windowDidResize:) => on_window_did_resize::<R> as extern fn(&Object, Sel, id),
             (windowDidMove:) => on_window_did_move as extern fn(&Object, Sel, id),
             (windowDidChangeBackingProperties:) => on_window_did_change_backing_properties as extern fn(&Object, Sel, id),
-            (windowDidBecomeKey:) => on_window_did_become_key as extern fn(&Object, Sel, id),
+            (windowDidBecomeKey:) => on_window_did_become_key::<R> as extern fn(&Object, Sel, id),
             (windowDidResignKey:) => on_window_did_resign_key as extern fn(&Object, Sel, id),
             (draggingEntered:) => on_dragging_entered as extern fn(&Object, Sel, id) -> BOOL,
             (prepareForDragOperation:) => on_prepare_for_drag_operation as extern fn(&Object, Sel, id) -> BOOL,
