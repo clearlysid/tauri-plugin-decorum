@@ -46,21 +46,21 @@ pub fn position_traffic_lights(ns_window_handle: UnsafeWindowHandle, x: f64, y: 
             .filter(|button| !button.is_null())
             .map(|button| {
                 let rect: NSRect = NSView::frame(button);
-                (button, rect.origin.x - close_rect.origin.x, rect.origin.y)
+                (button, rect.origin.x - close_rect.origin.x, rect.origin.y - close_rect.origin.y)
             })
             .collect();
 
-        let title_bar_frame_height = close_rect.size.height + y;
+        let title_bar_frame_height = close_rect.size.height + 2.0 * y;
         let mut title_bar_rect = NSView::frame(title_bar_container_view);
         title_bar_rect.size.height = title_bar_frame_height;
         title_bar_rect.origin.y = NSView::frame(ns_window).size.height - title_bar_frame_height;
         let _: () = msg_send![title_bar_container_view, setFrame: title_bar_rect];
 
-        // Translate the native button group without changing its spacing or local baseline.
-        for (button, offset_x, origin_y) in window_buttons {
+        // Position the group at explicit left/top insets, preserving native relative geometry.
+        for (button, offset_x, offset_y) in window_buttons {
             let mut rect: NSRect = NSView::frame(button);
             rect.origin.x = x + offset_x;
-            rect.origin.y = origin_y;
+            rect.origin.y = y + offset_y;
             button.setFrameOrigin(rect.origin);
         }
     }

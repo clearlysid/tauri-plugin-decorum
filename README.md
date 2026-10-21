@@ -108,4 +108,4 @@ Meanwhile, I hope you find it useful. Happy building! 🥂
 
 ### macOS traffic-light positioning
 
-Decorum preserves the native button spacing and local vertical baseline. The inset is applied immediately and reapplied after initial focus, native resize and fullscreen-exit layout. Set a custom inset while the window is hidden, before showing it. Do not combine this with Tauri's `traffic_light_position` or a separate button-positioning observer; those compete with Decorum. `x` positions the close button; `y` is the extra titlebar-container height above the button height.
+Decorum preserves the native spacing and relative button alignment. The inset is applied immediately and reapplied after initial focus, native resize and fullscreen-exit layout. Set a custom inset while the window is hidden, before showing it. Do not combine this with Tauri's `traffic_light_position` or a separate button-positioning observer; those compete with Decorum. `x` and `y` are the close button’s left and top insets in logical points. The container gives the group equal top/bottom space, independent of AppKit’s previous layout.
