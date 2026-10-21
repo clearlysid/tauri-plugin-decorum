@@ -67,8 +67,10 @@ fn position_traffic_lights(
             if parent.is_null() {
                 continue;
             }
-            let origin = parent.convertPoint_fromView_(NSPoint::new(x + offset.0, top + offset.1), nil);
             let frame: NSRect = NSView::frame(button);
+            let target = NSRect::new(NSPoint::new(x + offset.0, top + offset.1), frame.size);
+            let target: NSRect = msg_send![parent, convertRect: target fromView: nil];
+            let origin = target.origin;
             if frame.origin.x != origin.x || frame.origin.y != origin.y {
                 button.setFrameOrigin(origin);
             }
