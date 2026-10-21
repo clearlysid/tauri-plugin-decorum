@@ -77,6 +77,47 @@ struct WindowState<R: Runtime> {
     traffic_light_x: f64,
     traffic_light_y: f64,
     fullscreen_transition: bool,
+    fullscreen_button_visibility: Option<[bool; 3]>,
+}
+
+#[cfg(target_os = "macos")]
+impl<R: Runtime> WindowState<R> {
+    fn set_transition_visibility(&mut self, hidden: bool) {
+        use cocoa::appkit::{NSWindow, NSWindowButton};
+        use cocoa::base::{id, BOOL, NO, YES};
+
+        unsafe {
+            let window = self.window.ns_window().expect("NS window should exist during fullscreen transition") as id;
+            let buttons = [
+                window.standardWindowButton_(NSWindowButton::NSWindowCloseButton),
+                window.standardWindowButton_(NSWindowButton::NSWindowMiniaturizeButton),
+                window.standardWindowButton_(NSWindowButton::NSWindowZoomButton),
+            ];
+            let visibility = if hidden {
+                if self.fullscreen_button_visibility.is_some() {
+                    return;
+                }
+                self.fullscreen_button_visibility = Some(buttons.map(|button| {
+                    if button.is_null() {
+                        return true;
+                    }
+                    let hidden: BOOL = msg_send![button, isHidden];
+                    hidden != NO
+                }));
+                [true; 3]
+            } else {
+                match self.fullscreen_button_visibility.take() {
+                    Some(visibility) => visibility,
+                    None => return,
+                }
+            };
+            for (button, hidden) in buttons.into_iter().zip(visibility) {
+                if !button.is_null() {
+                    let _: () = msg_send![button, setHidden: if hidden { YES } else { NO }];
+                }
+            }
+        }
+    }
 }
 
 #[cfg(target_os = "macos")]
@@ -263,6 +304,9 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
 
                 let super_del: id = *this.get_ivar("super_delegate");
                 let _: () = msg_send![super_del, windowDidEnterFullScreen: notification];
+                with_window_state(this, |state: &mut WindowState<R>| {
+                    state.set_transition_visibility(false);
+                });
             }
         }
         extern "C" fn on_window_will_enter_full_screen<R: Runtime>(
@@ -272,6 +316,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
         ) {
             unsafe {
                 with_window_state(&*this, |state: &mut WindowState<R>| {
+                    state.set_transition_visibility(true);
                     state.fullscreen_transition = true;
                     state
                         .window
@@ -298,6 +343,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                         state.traffic_light_x,
                         state.traffic_light_y,
                     );
+                    state.set_transition_visibility(false);
                 });
             }
         }
@@ -331,6 +377,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
         ) {
             unsafe {
                 with_window_state(&*this, |state: &mut WindowState<R>| {
+                    state.set_transition_visibility(true);
                     state.fullscreen_transition = true;
                     state
                         .window
@@ -354,6 +401,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                     state.fullscreen_transition = false;
                     let handle = state.window.ns_window().expect("NS window should exist after fullscreen failure");
                     position_traffic_lights(UnsafeWindowHandle(handle), state.traffic_light_x, state.traffic_light_y);
+                    state.set_transition_visibility(false);
                 });
             }
         }
@@ -367,6 +415,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                 let _: () = msg_send![super_del, windowDidFailToExitFullScreen: window];
                 with_window_state(this, |state: &mut WindowState<R>| {
                     state.fullscreen_transition = false;
+                    state.set_transition_visibility(false);
                 });
             }
         }
@@ -402,6 +451,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             traffic_light_x: WINDOW_CONTROL_PAD_X,
             traffic_light_y: WINDOW_CONTROL_PAD_Y,
             fullscreen_transition: false,
+            fullscreen_button_visibility: None,
         };
         let app_box = Box::into_raw(Box::new(app_state)) as *mut c_void;
         let random_str: String = rand::thread_rng()
