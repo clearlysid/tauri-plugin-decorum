@@ -16,10 +16,14 @@ unsafe impl Sync for UnsafeWindowHandle {}
 
 #[cfg(target_os = "macos")]
 pub fn position_traffic_lights(ns_window_handle: UnsafeWindowHandle, x: f64, y: f64) {
-    use cocoa::appkit::{NSView, NSWindow, NSWindowButton};
+    use cocoa::appkit::{NSView, NSWindow, NSWindowButton, NSWindowStyleMask};
     use cocoa::foundation::NSRect;
     let ns_window = ns_window_handle.0 as cocoa::base::id;
     unsafe {
+        if ns_window.styleMask().contains(NSWindowStyleMask::NSFullScreenWindowMask) {
+            return;
+        }
+
         let close = ns_window.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
         let miniaturize =
             ns_window.standardWindowButton_(NSWindowButton::NSWindowMiniaturizeButton);
@@ -72,6 +76,7 @@ struct WindowState<R: Runtime> {
     window: Window<R>,
     traffic_light_x: f64,
     traffic_light_y: f64,
+    fullscreen_transition: bool,
 }
 
 #[cfg(target_os = "macos")]
@@ -140,6 +145,9 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                 let super_del: id = *this.get_ivar("super_delegate");
                 let _: () = msg_send![super_del, windowDidResize: notification];
                 with_window_state(&*this, |state: &mut WindowState<R>| {
+                    if state.fullscreen_transition {
+                        return;
+                    }
                     let id = state
                         .window
                         .ns_window()
@@ -176,6 +184,9 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                 let super_del: id = *this.get_ivar("super_delegate");
                 let _: () = msg_send![super_del, windowDidBecomeKey: notification];
                 with_window_state(this, |state: &mut WindowState<R>| {
+                    if state.fullscreen_transition {
+                        return;
+                    }
                     let id = state.window.ns_window().expect("NS window should exist when becoming key");
                     position_traffic_lights(
                         UnsafeWindowHandle(id),
@@ -243,6 +254,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
         ) {
             unsafe {
                 with_window_state(&*this, |state: &mut WindowState<R>| {
+                    state.fullscreen_transition = false;
                     state
                         .window
                         .emit("did-enter-fullscreen", ())
@@ -260,6 +272,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
         ) {
             unsafe {
                 with_window_state(&*this, |state: &mut WindowState<R>| {
+                    state.fullscreen_transition = true;
                     state
                         .window
                         .emit("will-enter-fullscreen", ())
@@ -279,6 +292,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                 let super_del: id = *this.get_ivar("super_delegate");
                 let _: () = msg_send![super_del, windowDidExitFullScreen: notification];
                 with_window_state(&*this, |state: &mut WindowState<R>| {
+                    state.fullscreen_transition = false;
                     state
                         .window
                         .emit("did-exit-fullscreen", ())
@@ -300,6 +314,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
         ) {
             unsafe {
                 with_window_state(&*this, |state: &mut WindowState<R>| {
+                    state.fullscreen_transition = true;
                     state
                         .window
                         .emit("will-exit-fullscreen", ())
@@ -310,7 +325,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                 let _: () = msg_send![super_del, windowWillExitFullScreen: notification];
             }
         }
-        extern "C" fn on_window_did_fail_to_enter_full_screen(
+        extern "C" fn on_window_did_fail_to_enter_full_screen<R: Runtime>(
             this: &Object,
             _cmd: Sel,
             window: id,
@@ -318,6 +333,24 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             unsafe {
                 let super_del: id = *this.get_ivar("super_delegate");
                 let _: () = msg_send![super_del, windowDidFailToEnterFullScreen: window];
+                with_window_state(this, |state: &mut WindowState<R>| {
+                    state.fullscreen_transition = false;
+                    let handle = state.window.ns_window().expect("NS window should exist after fullscreen failure");
+                    position_traffic_lights(UnsafeWindowHandle(handle), state.traffic_light_x, state.traffic_light_y);
+                });
+            }
+        }
+        extern "C" fn on_window_did_fail_to_exit_full_screen<R: Runtime>(
+            this: &Object,
+            _cmd: Sel,
+            window: id,
+        ) {
+            unsafe {
+                let super_del: id = *this.get_ivar("super_delegate");
+                let _: () = msg_send![super_del, windowDidFailToExitFullScreen: window];
+                with_window_state(this, |state: &mut WindowState<R>| {
+                    state.fullscreen_transition = false;
+                });
             }
         }
         extern "C" fn on_effective_appearance_did_change(
@@ -351,6 +384,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             window,
             traffic_light_x: WINDOW_CONTROL_PAD_X,
             traffic_light_y: WINDOW_CONTROL_PAD_Y,
+            fullscreen_transition: false,
         };
         let app_box = Box::into_raw(Box::new(app_state)) as *mut c_void;
         let random_str: String = rand::thread_rng()
@@ -385,7 +419,8 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             (windowWillEnterFullScreen:) => on_window_will_enter_full_screen::<R> as extern fn(&Object, Sel, id),
             (windowDidExitFullScreen:) => on_window_did_exit_full_screen::<R> as extern fn(&Object, Sel, id),
             (windowWillExitFullScreen:) => on_window_will_exit_full_screen::<R> as extern fn(&Object, Sel, id),
-            (windowDidFailToEnterFullScreen:) => on_window_did_fail_to_enter_full_screen as extern fn(&Object, Sel, id),
+            (windowDidFailToEnterFullScreen:) => on_window_did_fail_to_enter_full_screen::<R> as extern fn(&Object, Sel, id),
+            (windowDidFailToExitFullScreen:) => on_window_did_fail_to_exit_full_screen::<R> as extern fn(&Object, Sel, id),
             (effectiveAppearanceDidChange:) => on_effective_appearance_did_change as extern fn(&Object, Sel, id),
             (effectiveAppearanceDidChangedOnMainThread:) => on_effective_appearance_did_changed_on_main_thread as extern fn(&Object, Sel, id)
         }))
