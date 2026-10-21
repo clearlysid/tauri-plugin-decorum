@@ -283,6 +283,24 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                 let _: () = msg_send![super_del, windowWillEnterFullScreen: notification];
             }
         }
+        extern "C" fn restore_traffic_lights<R: Runtime>(this: &Object, _cmd: Sel, _sender: id) {
+            unsafe {
+                with_window_state(this, |state: &mut WindowState<R>| {
+                    if state.fullscreen_transition {
+                        return;
+                    }
+                    let window = state.window.ns_window().expect("NS window should exist after fullscreen exit") as id;
+                    let content: id = msg_send![window, contentView];
+                    let frame_view: id = msg_send![content, superview];
+                    let _: () = msg_send![frame_view, layoutSubtreeIfNeeded];
+                    position_traffic_lights(
+                        UnsafeWindowHandle(window as *mut std::ffi::c_void),
+                        state.traffic_light_x,
+                        state.traffic_light_y,
+                    );
+                });
+            }
+        }
         extern "C" fn on_window_did_exit_full_screen<R: Runtime>(
             this: &Object,
             _cmd: Sel,
@@ -297,14 +315,13 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                         .window
                         .emit("did-exit-fullscreen", ())
                         .expect("Failed to emit event");
-
-                    let id = state.window.ns_window().expect("Failed to emit event") as id;
-                    position_traffic_lights(
-                        UnsafeWindowHandle(id as *mut std::ffi::c_void),
-                        state.traffic_light_x,
-                        state.traffic_light_y,
-                    );
                 });
+                // AppKit finishes restoring its titlebar after this delegate callback returns.
+                let _: () = msg_send![this,
+                    performSelector: sel!(restoreTrafficLights:)
+                    withObject: cocoa::base::nil
+                    afterDelay: 0.0f64
+                ];
             }
         }
         extern "C" fn on_window_will_exit_full_screen<R: Runtime>(
@@ -418,6 +435,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             (windowDidEnterFullScreen:) => on_window_did_enter_full_screen::<R> as extern fn(&Object, Sel, id),
             (windowWillEnterFullScreen:) => on_window_will_enter_full_screen::<R> as extern fn(&Object, Sel, id),
             (windowDidExitFullScreen:) => on_window_did_exit_full_screen::<R> as extern fn(&Object, Sel, id),
+            (restoreTrafficLights:) => restore_traffic_lights::<R> as extern fn(&Object, Sel, id),
             (windowWillExitFullScreen:) => on_window_will_exit_full_screen::<R> as extern fn(&Object, Sel, id),
             (windowDidFailToEnterFullScreen:) => on_window_did_fail_to_enter_full_screen::<R> as extern fn(&Object, Sel, id),
             (windowDidFailToExitFullScreen:) => on_window_did_fail_to_exit_full_screen::<R> as extern fn(&Object, Sel, id),
