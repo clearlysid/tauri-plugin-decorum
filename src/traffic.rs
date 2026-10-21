@@ -82,7 +82,7 @@ struct WindowState<R: Runtime> {
 #[cfg(target_os = "macos")]
 impl<R: Runtime> WindowState<R> {
     fn position(&self) {
-        if !self.active.get() || self.fullscreen.get() || self.positioning.replace(true) {
+        if !self.active.get() || self.positioning.replace(true) {
             return;
         }
         position_traffic_lights(
