@@ -41,38 +41,26 @@ pub fn position_traffic_lights(ns_window_handle: UnsafeWindowHandle, x: f64, y: 
         }
 
         let close_rect: NSRect = msg_send![close, frame];
-        let button_height = close_rect.size.height;
+        let window_buttons: Vec<_> = [close, miniaturize, zoom]
+            .into_iter()
+            .filter(|button| !button.is_null())
+            .map(|button| {
+                let rect: NSRect = NSView::frame(button);
+                (button, rect.origin.x - close_rect.origin.x, rect.origin.y)
+            })
+            .collect();
 
-        let title_bar_frame_height = button_height + y;
+        let title_bar_frame_height = close_rect.size.height + y;
         let mut title_bar_rect = NSView::frame(title_bar_container_view);
         title_bar_rect.size.height = title_bar_frame_height;
         title_bar_rect.origin.y = NSView::frame(ns_window).size.height - title_bar_frame_height;
         let _: () = msg_send![title_bar_container_view, setFrame: title_bar_rect];
 
-        // Check if other buttons exist before using them
-        let mut window_buttons = Vec::new();
-        if !close.is_null() {
-            window_buttons.push(close);
-        }
-        if !miniaturize.is_null() {
-            window_buttons.push(miniaturize);
-        }
-        if !zoom.is_null() {
-            window_buttons.push(zoom);
-        }
-        
-        if window_buttons.is_empty() {
-            return;
-        }
-        
-        let space_between = 23.0; // Fixed space between buttons (matches native NSWindow traffic light spacing, measured via Accessibility API on an unmodified titled window)
-        let vertical_offset = 4.0; // Adjust this value to push buttons down
-
-        for (i, button) in window_buttons.into_iter().enumerate() {
+        // Translate the native button group without changing its spacing or local baseline.
+        for (button, offset_x, origin_y) in window_buttons {
             let mut rect: NSRect = NSView::frame(button);
-            rect.origin.x = x + (i as f64 * space_between);
-            // Adjust vertical positioning
-            rect.origin.y = ((title_bar_frame_height - button_height) / 2.0) - vertical_offset;
+            rect.origin.x = x + offset_x;
+            rect.origin.y = origin_y;
             button.setFrameOrigin(rect.origin);
         }
     }
@@ -149,6 +137,8 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
         }
         extern "C" fn on_window_did_resize<R: Runtime>(this: &Object, _cmd: Sel, notification: id) {
             unsafe {
+                let super_del: id = *this.get_ivar("super_delegate");
+                let _: () = msg_send![super_del, windowDidResize: notification];
                 with_window_state(&*this, |state: &mut WindowState<R>| {
                     let id = state
                         .window
@@ -163,9 +153,6 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                         state.traffic_light_y,
                     );
                 });
-
-                let super_del: id = *this.get_ivar("super_delegate");
-                let _: () = msg_send![super_del, windowDidResize: notification];
             }
         }
         extern "C" fn on_window_did_move(this: &Object, _cmd: Sel, notification: id) {
@@ -281,6 +268,8 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             notification: id,
         ) {
             unsafe {
+                let super_del: id = *this.get_ivar("super_delegate");
+                let _: () = msg_send![super_del, windowDidExitFullScreen: notification];
                 with_window_state(&*this, |state: &mut WindowState<R>| {
                     state
                         .window
@@ -294,9 +283,6 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                         state.traffic_light_y,
                     );
                 });
-
-                let super_del: id = *this.get_ivar("super_delegate");
-                let _: () = msg_send![super_del, windowDidExitFullScreen: notification];
             }
         }
         extern "C" fn on_window_will_exit_full_screen<R: Runtime>(
