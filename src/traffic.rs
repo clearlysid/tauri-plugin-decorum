@@ -172,7 +172,7 @@ impl<R: Runtime> WindowState<R> {
 #[cfg(target_os = "macos")]
 pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
     use cocoa::appkit::{NSWindow, NSWindowButton};
-    use cocoa::base::{id, BOOL};
+    use cocoa::base::{id, BOOL, YES};
     use cocoa::foundation::NSUInteger;
     use objc::runtime::{Object, Sel};
     use std::ffi::c_void;
@@ -415,7 +415,10 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
         ) {
             unsafe {
                 let super_del: id = *this.get_ivar("super_delegate");
-                let _: () = msg_send![super_del, windowDidFailToEnterFullScreen: window];
+                let responds: BOOL = msg_send![super_del, respondsToSelector: sel!(windowDidFailToEnterFullScreen:)];
+                if responds == YES {
+                    let _: () = msg_send![super_del, windowDidFailToEnterFullScreen: window];
+                }
                 with_window_state(this, |state: &WindowState<R>| {
                     state.fullscreen.set(false);
                     state.observe_layout(true);
@@ -427,7 +430,10 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
         extern "C" fn on_window_did_fail_to_exit_full_screen<R: Runtime>(this: &Object, _cmd: Sel, window: id) {
             unsafe {
                 let super_del: id = *this.get_ivar("super_delegate");
-                let _: () = msg_send![super_del, windowDidFailToExitFullScreen: window];
+                let responds: BOOL = msg_send![super_del, respondsToSelector: sel!(windowDidFailToExitFullScreen:)];
+                if responds == YES {
+                    let _: () = msg_send![super_del, windowDidFailToExitFullScreen: window];
+                }
                 with_window_state(this, |state: &WindowState<R>| state.fullscreen.set(true));
             }
         }
