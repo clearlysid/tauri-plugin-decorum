@@ -5,6 +5,7 @@
 
 use objc::{msg_send, sel, sel_impl};
 use rand::{distributions::Alphanumeric, Rng};
+use std::cell::Cell;
 use tauri::{Emitter, Runtime, Window};
 
 const WINDOW_CONTROL_PAD_X: f64 = 12.0;
@@ -15,57 +16,61 @@ unsafe impl Send for UnsafeWindowHandle {}
 unsafe impl Sync for UnsafeWindowHandle {}
 
 #[cfg(target_os = "macos")]
-pub fn position_traffic_lights(ns_window_handle: UnsafeWindowHandle, x: f64, y: f64) {
-    use cocoa::appkit::{NSView, NSWindow, NSWindowButton, NSWindowStyleMask};
-    use cocoa::foundation::NSRect;
-    let ns_window = ns_window_handle.0 as cocoa::base::id;
+fn position_traffic_lights(
+    ns_window_handle: UnsafeWindowHandle,
+    x: f64,
+    y: f64,
+    offsets: &[cocoa::foundation::NSPoint; 3],
+) {
+    use cocoa::appkit::{NSView, NSWindow, NSWindowButton};
+    use cocoa::base::{id, nil};
+    use cocoa::foundation::{NSPoint, NSRect};
+    let window = ns_window_handle.0 as id;
     unsafe {
-        if ns_window.styleMask().contains(NSWindowStyleMask::NSFullScreenWindowMask) {
-            return;
-        }
-
-        let close = ns_window.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
-        let miniaturize =
-            ns_window.standardWindowButton_(NSWindowButton::NSWindowMiniaturizeButton);
-        let zoom = ns_window.standardWindowButton_(NSWindowButton::NSWindowZoomButton);
-
-        // Check if close button exists and has a valid superview
+        let buttons = [
+            window.standardWindowButton_(NSWindowButton::NSWindowCloseButton),
+            window.standardWindowButton_(NSWindowButton::NSWindowMiniaturizeButton),
+            window.standardWindowButton_(NSWindowButton::NSWindowZoomButton),
+        ];
+        let close = buttons[0];
         if close.is_null() {
             return;
         }
-        
-        let close_superview = close.superview();
-        if close_superview.is_null() {
+        let host: id = msg_send![close, window];
+        // Fullscreen can reparent the native controls into AppKit's separate toolbar window.
+        if host != window {
             return;
         }
-        
-        let title_bar_container_view = close_superview.superview();
-        if title_bar_container_view.is_null() {
+        let parent = close.superview();
+        if parent.is_null() {
             return;
         }
-
-        let close_rect: NSRect = msg_send![close, frame];
-        let window_buttons: Vec<_> = [close, miniaturize, zoom]
-            .into_iter()
-            .filter(|button| !button.is_null())
-            .map(|button| {
-                let rect: NSRect = NSView::frame(button);
-                (button, rect.origin.x - close_rect.origin.x, rect.origin.y - close_rect.origin.y)
-            })
-            .collect();
-
-        let title_bar_frame_height = close_rect.size.height + 2.0 * y;
-        let mut title_bar_rect = NSView::frame(title_bar_container_view);
-        title_bar_rect.size.height = title_bar_frame_height;
-        title_bar_rect.origin.y = NSView::frame(ns_window).size.height - title_bar_frame_height;
-        let _: () = msg_send![title_bar_container_view, setFrame: title_bar_rect];
-
-        // Position the group at explicit left/top insets, preserving native relative geometry.
-        for (button, offset_x, offset_y) in window_buttons {
-            let mut rect: NSRect = NSView::frame(button);
-            rect.origin.x = x + offset_x;
-            rect.origin.y = y + offset_y;
-            button.setFrameOrigin(rect.origin);
+        let container = parent.superview();
+        if container.is_null() {
+            return;
+        }
+        let close_rect = NSView::frame(close);
+        let height = close_rect.size.height + 2.0 * y;
+        let mut frame = NSView::frame(container);
+        frame.size.height = height;
+        frame.origin.y = NSView::frame(window).size.height - height;
+        if NSView::frame(container) != frame {
+            let _: () = msg_send![container, setFrame: frame];
+        }
+        let top = NSView::frame(window).size.height - y - close_rect.size.height;
+        for (button, offset) in buttons.into_iter().zip(offsets) {
+            if button.is_null() {
+                continue;
+            }
+            let parent = button.superview();
+            if parent.is_null() {
+                continue;
+            }
+            let origin = parent.convertPoint_fromView_(NSPoint::new(x + offset.x, top + offset.y), nil);
+            let frame: NSRect = NSView::frame(button);
+            if frame.origin != origin {
+                button.setFrameOrigin(origin);
+            }
         }
     }
 }
@@ -74,47 +79,71 @@ pub fn position_traffic_lights(ns_window_handle: UnsafeWindowHandle, x: f64, y: 
 #[derive(Debug)]
 struct WindowState<R: Runtime> {
     window: Window<R>,
-    traffic_light_x: f64,
-    traffic_light_y: f64,
-    fullscreen_transition: bool,
-    fullscreen_button_visibility: Option<[bool; 3]>,
+    traffic_light_x: Cell<f64>,
+    traffic_light_y: Cell<f64>,
+    native_offsets: [cocoa::foundation::NSPoint; 3],
+    fullscreen: Cell<bool>,
+    positioning: Cell<bool>,
+    active: Cell<bool>,
 }
 
 #[cfg(target_os = "macos")]
 impl<R: Runtime> WindowState<R> {
-    fn set_transition_visibility(&mut self, hidden: bool) {
-        use cocoa::appkit::{NSWindow, NSWindowButton};
-        use cocoa::base::{id, BOOL, NO, YES};
+    fn position(&self) {
+        if !self.active.get() || self.fullscreen.get() || self.positioning.replace(true) {
+            return;
+        }
+        if let Ok(window) = self.window.ns_window() {
+            position_traffic_lights(
+                UnsafeWindowHandle(window),
+                self.traffic_light_x.get(),
+                self.traffic_light_y.get(),
+                &self.native_offsets,
+            );
+        }
+        self.positioning.set(false);
+    }
 
+    fn observe_layout(&self, observe: bool) {
+        use cocoa::appkit::{NSView, NSWindow, NSWindowButton};
+        use cocoa::base::{id, nil, YES};
+        use cocoa::foundation::NSString;
         unsafe {
-            let window = self.window.ns_window().expect("NS window should exist during fullscreen transition") as id;
-            let buttons = [
-                window.standardWindowButton_(NSWindowButton::NSWindowCloseButton),
-                window.standardWindowButton_(NSWindowButton::NSWindowMiniaturizeButton),
-                window.standardWindowButton_(NSWindowButton::NSWindowZoomButton),
-            ];
-            let visibility = if hidden {
-                if self.fullscreen_button_visibility.is_some() {
-                    return;
-                }
-                self.fullscreen_button_visibility = Some(buttons.map(|button| {
-                    if button.is_null() {
-                        return true;
-                    }
-                    let hidden: BOOL = msg_send![button, isHidden];
-                    hidden != NO
-                }));
-                [true; 3]
-            } else {
-                match self.fullscreen_button_visibility.take() {
-                    Some(visibility) => visibility,
-                    None => return,
-                }
+            let window = match self.window.ns_window() {
+                Ok(window) => window as id,
+                Err(_) => return,
             };
-            for (button, hidden) in buttons.into_iter().zip(visibility) {
-                if !button.is_null() {
-                    let _: () = msg_send![button, setHidden: if hidden { YES } else { NO }];
+            let delegate: id = msg_send![window, delegate];
+            let center: id = msg_send![objc::class!(NSNotificationCenter), defaultCenter];
+            for notification in ["NSViewFrameDidChangeNotification", "NSViewBoundsDidChangeNotification"] {
+            let name = NSString::alloc(nil).init_str(notification);
+            let _: () = msg_send![center, removeObserver: delegate name: name object: nil];
+            if observe {
+                let close = window.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
+                if !close.is_null() {
+                    let parent = close.superview();
+                    let container = if parent.is_null() { nil } else { parent.superview() };
+                    for view in [
+                        close,
+                        window.standardWindowButton_(NSWindowButton::NSWindowMiniaturizeButton),
+                        window.standardWindowButton_(NSWindowButton::NSWindowZoomButton),
+                        parent,
+                        container,
+                    ] {
+                        if !view.is_null() {
+                            let _: () = msg_send![view, setPostsFrameChangedNotifications: YES];
+                            let _: () = msg_send![view, setPostsBoundsChangedNotifications: YES];
+                            let _: () = msg_send![center,
+                                addObserver: delegate
+                                selector: sel!(trafficLightsLayoutChanged:)
+                                name: name
+                                object: view
+                            ];
+                        }
+                    }
                 }
+            }
+            let _: () = msg_send![name, release];
             }
         }
     }
@@ -128,35 +157,40 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
     use objc::runtime::{Object, Sel};
     use std::ffi::c_void;
 
-    // Check if this window has traffic lights before setting up positioning
-    unsafe {
-        let ns_win = match window.ns_window() {
-            Ok(win) => win as id,
+    let native_offsets = unsafe {
+        use cocoa::appkit::NSView;
+        use cocoa::foundation::NSPoint;
+        let window = match window.ns_window() {
+            Ok(window) => window as id,
             Err(_) => return,
         };
-        
-        // Quick check: if close button doesn't exist, this window probably doesn't have decorations
-        let close = ns_win.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
+        let close = window.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
         if close.is_null() {
             return;
         }
-    }
-
-    // Do the initial positioning
-    position_traffic_lights(
-        UnsafeWindowHandle(window.ns_window().expect("Failed to create window handle")),
-        WINDOW_CONTROL_PAD_X,
-        WINDOW_CONTROL_PAD_Y,
-    );
+        let origin = NSView::frame(close).origin;
+        [
+            close,
+            window.standardWindowButton_(NSWindowButton::NSWindowMiniaturizeButton),
+            window.standardWindowButton_(NSWindowButton::NSWindowZoomButton),
+        ].map(|button| {
+            if button.is_null() {
+                NSPoint::new(0.0, 0.0)
+            } else {
+                let frame = NSView::frame(button);
+                NSPoint::new(frame.origin.x - origin.x, frame.origin.y - origin.y)
+            }
+        })
+    };
 
     // Ensure they stay in place while resizing the window.
-    fn with_window_state<R: Runtime, F: FnOnce(&mut WindowState<R>) -> T, T>(
+    fn with_window_state<R: Runtime, F: FnOnce(&WindowState<R>) -> T, T>(
         this: &Object,
         func: F,
     ) {
         let ptr = unsafe {
             let x: *mut c_void = *this.get_ivar("app_box");
-            &mut *(x as *mut WindowState<R>)
+            &*(x as *const WindowState<R>)
         };
         func(ptr);
     }
@@ -175,9 +209,13 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                 msg_send![super_del, windowShouldClose: sender]
             }
         }
-        extern "C" fn on_window_will_close(this: &Object, _cmd: Sel, notification: id) {
+        extern "C" fn on_window_will_close<R: Runtime>(this: &Object, _cmd: Sel, notification: id) {
             unsafe {
                 let super_del: id = *this.get_ivar("super_delegate");
+                with_window_state(this, |state: &WindowState<R>| {
+                    state.active.set(false);
+                    state.observe_layout(false);
+                });
                 let _: () = msg_send![super_del, windowWillClose: notification];
             }
         }
@@ -185,24 +223,11 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             unsafe {
                 let super_del: id = *this.get_ivar("super_delegate");
                 let _: () = msg_send![super_del, windowDidResize: notification];
-                with_window_state(&*this, |state: &mut WindowState<R>| {
-                    if state.fullscreen_transition {
-                        return;
-                    }
-                    let id = state
-                        .window
-                        .ns_window()
-                        .expect("NS window should exist on state to handle resize")
-                        as id;
-
-                    #[cfg(target_os = "macos")]
-                    position_traffic_lights(
-                        UnsafeWindowHandle(id as *mut std::ffi::c_void),
-                        state.traffic_light_x,
-                        state.traffic_light_y,
-                    );
-                });
+                with_window_state(this, |state: &WindowState<R>| state.position());
             }
+        }
+        extern "C" fn on_layout_changed<R: Runtime>(this: &Object, _cmd: Sel, _notification: id) {
+            with_window_state(this, |state: &WindowState<R>| state.position());
         }
         extern "C" fn on_window_did_move(this: &Object, _cmd: Sel, notification: id) {
             unsafe {
@@ -224,17 +249,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             unsafe {
                 let super_del: id = *this.get_ivar("super_delegate");
                 let _: () = msg_send![super_del, windowDidBecomeKey: notification];
-                with_window_state(this, |state: &mut WindowState<R>| {
-                    if state.fullscreen_transition {
-                        return;
-                    }
-                    let id = state.window.ns_window().expect("NS window should exist when becoming key");
-                    position_traffic_lights(
-                        UnsafeWindowHandle(id),
-                        state.traffic_light_x,
-                        state.traffic_light_y,
-                    );
-                });
+                with_window_state(this, |state: &WindowState<R>| state.position());
             }
         }
         extern "C" fn on_window_did_resign_key(this: &Object, _cmd: Sel, notification: id) {
@@ -294,8 +309,9 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             notification: id,
         ) {
             unsafe {
-                with_window_state(&*this, |state: &mut WindowState<R>| {
-                    state.fullscreen_transition = false;
+                with_window_state(&*this, |state: &WindowState<R>| {
+                    state.fullscreen.set(true);
+                    state.observe_layout(true);
                     state
                         .window
                         .emit("did-enter-fullscreen", ())
@@ -304,9 +320,6 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
 
                 let super_del: id = *this.get_ivar("super_delegate");
                 let _: () = msg_send![super_del, windowDidEnterFullScreen: notification];
-                with_window_state(this, |state: &mut WindowState<R>| {
-                    state.set_transition_visibility(false);
-                });
             }
         }
         extern "C" fn on_window_will_enter_full_screen<R: Runtime>(
@@ -315,9 +328,9 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             notification: id,
         ) {
             unsafe {
-                with_window_state(&*this, |state: &mut WindowState<R>| {
-                    state.set_transition_visibility(true);
-                    state.fullscreen_transition = true;
+                with_window_state(&*this, |state: &WindowState<R>| {
+                    state.observe_layout(true);
+                    state.position();
                     state
                         .window
                         .emit("will-enter-fullscreen", ())
@@ -328,25 +341,6 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                 let _: () = msg_send![super_del, windowWillEnterFullScreen: notification];
             }
         }
-        extern "C" fn restore_traffic_lights<R: Runtime>(this: &Object, _cmd: Sel, _sender: id) {
-            unsafe {
-                with_window_state(this, |state: &mut WindowState<R>| {
-                    if state.fullscreen_transition {
-                        return;
-                    }
-                    let window = state.window.ns_window().expect("NS window should exist after fullscreen exit") as id;
-                    let content: id = msg_send![window, contentView];
-                    let frame_view: id = msg_send![content, superview];
-                    let _: () = msg_send![frame_view, layoutSubtreeIfNeeded];
-                    position_traffic_lights(
-                        UnsafeWindowHandle(window as *mut std::ffi::c_void),
-                        state.traffic_light_x,
-                        state.traffic_light_y,
-                    );
-                    state.set_transition_visibility(false);
-                });
-            }
-        }
         extern "C" fn on_window_did_exit_full_screen<R: Runtime>(
             this: &Object,
             _cmd: Sel,
@@ -355,19 +349,16 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             unsafe {
                 let super_del: id = *this.get_ivar("super_delegate");
                 let _: () = msg_send![super_del, windowDidExitFullScreen: notification];
-                with_window_state(&*this, |state: &mut WindowState<R>| {
-                    state.fullscreen_transition = false;
+                with_window_state(&*this, |state: &WindowState<R>| {
                     state
                         .window
                         .emit("did-exit-fullscreen", ())
                         .expect("Failed to emit event");
+
+                    state.fullscreen.set(false);
+                    state.observe_layout(true);
+                    state.position();
                 });
-                // AppKit finishes restoring its titlebar after this delegate callback returns.
-                let _: () = msg_send![this,
-                    performSelector: sel!(restoreTrafficLights:)
-                    withObject: cocoa::base::nil
-                    afterDelay: 0.0f64
-                ];
             }
         }
         extern "C" fn on_window_will_exit_full_screen<R: Runtime>(
@@ -376,9 +367,10 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             notification: id,
         ) {
             unsafe {
-                with_window_state(&*this, |state: &mut WindowState<R>| {
-                    state.set_transition_visibility(true);
-                    state.fullscreen_transition = true;
+                with_window_state(&*this, |state: &WindowState<R>| {
+                    state.fullscreen.set(false);
+                    state.observe_layout(true);
+                    state.position();
                     state
                         .window
                         .emit("will-exit-fullscreen", ())
@@ -397,26 +389,18 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             unsafe {
                 let super_del: id = *this.get_ivar("super_delegate");
                 let _: () = msg_send![super_del, windowDidFailToEnterFullScreen: window];
-                with_window_state(this, |state: &mut WindowState<R>| {
-                    state.fullscreen_transition = false;
-                    let handle = state.window.ns_window().expect("NS window should exist after fullscreen failure");
-                    position_traffic_lights(UnsafeWindowHandle(handle), state.traffic_light_x, state.traffic_light_y);
-                    state.set_transition_visibility(false);
+                with_window_state(this, |state: &WindowState<R>| {
+                    state.fullscreen.set(false);
+                    state.observe_layout(true);
+                    state.position();
                 });
             }
         }
-        extern "C" fn on_window_did_fail_to_exit_full_screen<R: Runtime>(
-            this: &Object,
-            _cmd: Sel,
-            window: id,
-        ) {
+        extern "C" fn on_window_did_fail_to_exit_full_screen<R: Runtime>(this: &Object, _cmd: Sel, window: id) {
             unsafe {
                 let super_del: id = *this.get_ivar("super_delegate");
                 let _: () = msg_send![super_del, windowDidFailToExitFullScreen: window];
-                with_window_state(this, |state: &mut WindowState<R>| {
-                    state.fullscreen_transition = false;
-                    state.set_transition_visibility(false);
-                });
+                with_window_state(this, |state: &WindowState<R>| state.fullscreen.set(true));
             }
         }
         extern "C" fn on_effective_appearance_did_change(
@@ -448,10 +432,12 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
 
         let app_state = WindowState { 
             window,
-            traffic_light_x: WINDOW_CONTROL_PAD_X,
-            traffic_light_y: WINDOW_CONTROL_PAD_Y,
-            fullscreen_transition: false,
-            fullscreen_button_visibility: None,
+            traffic_light_x: Cell::new(WINDOW_CONTROL_PAD_X),
+            traffic_light_y: Cell::new(WINDOW_CONTROL_PAD_Y),
+            native_offsets,
+            fullscreen: Cell::new(false),
+            positioning: Cell::new(false),
+            active: Cell::new(true),
         };
         let app_box = Box::into_raw(Box::new(app_state)) as *mut c_void;
         let random_str: String = rand::thread_rng()
@@ -470,8 +456,9 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             toolbar: id = cocoa::base::nil,
             super_delegate: id = current_delegate,
             (windowShouldClose:) => on_window_should_close as extern fn(&Object, Sel, id) -> BOOL,
-            (windowWillClose:) => on_window_will_close as extern fn(&Object, Sel, id),
+            (windowWillClose:) => on_window_will_close::<R> as extern fn(&Object, Sel, id),
             (windowDidResize:) => on_window_did_resize::<R> as extern fn(&Object, Sel, id),
+            (trafficLightsLayoutChanged:) => on_layout_changed::<R> as extern fn(&Object, Sel, id),
             (windowDidMove:) => on_window_did_move as extern fn(&Object, Sel, id),
             (windowDidChangeBackingProperties:) => on_window_did_change_backing_properties as extern fn(&Object, Sel, id),
             (windowDidBecomeKey:) => on_window_did_become_key::<R> as extern fn(&Object, Sel, id),
@@ -485,13 +472,17 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             (windowDidEnterFullScreen:) => on_window_did_enter_full_screen::<R> as extern fn(&Object, Sel, id),
             (windowWillEnterFullScreen:) => on_window_will_enter_full_screen::<R> as extern fn(&Object, Sel, id),
             (windowDidExitFullScreen:) => on_window_did_exit_full_screen::<R> as extern fn(&Object, Sel, id),
-            (restoreTrafficLights:) => restore_traffic_lights::<R> as extern fn(&Object, Sel, id),
             (windowWillExitFullScreen:) => on_window_will_exit_full_screen::<R> as extern fn(&Object, Sel, id),
             (windowDidFailToEnterFullScreen:) => on_window_did_fail_to_enter_full_screen::<R> as extern fn(&Object, Sel, id),
             (windowDidFailToExitFullScreen:) => on_window_did_fail_to_exit_full_screen::<R> as extern fn(&Object, Sel, id),
             (effectiveAppearanceDidChange:) => on_effective_appearance_did_change as extern fn(&Object, Sel, id),
             (effectiveAppearanceDidChangedOnMainThread:) => on_effective_appearance_did_changed_on_main_thread as extern fn(&Object, Sel, id)
-        }))
+        }));
+        let delegate: id = msg_send![ns_win, delegate];
+        with_window_state(&*delegate, |state: &WindowState<R>| {
+            state.observe_layout(true);
+            state.position();
+        });
     }
 }
 
@@ -521,8 +512,9 @@ pub fn update_traffic_light_positions(window: &tauri::WebviewWindow, x: f64, y: 
         };
         
         // Specify Wry as the concrete runtime type
-        let state: &mut WindowState<Wry> = &mut *(app_box as *mut WindowState<Wry>);
-        state.traffic_light_x = x;
-        state.traffic_light_y = y;
+        let state: &WindowState<Wry> = &*(app_box as *const WindowState<Wry>);
+        state.traffic_light_x.set(x);
+        state.traffic_light_y.set(y);
+        state.position();
     }
 }
