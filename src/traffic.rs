@@ -20,7 +20,7 @@ fn position_traffic_lights(
     ns_window_handle: UnsafeWindowHandle,
     x: f64,
     y: f64,
-    offsets: &[cocoa::foundation::NSPoint; 3],
+    offsets: &[(f64, f64); 3],
 ) {
     use cocoa::appkit::{NSView, NSWindow, NSWindowButton};
     use cocoa::base::{id, nil};
@@ -54,7 +54,8 @@ fn position_traffic_lights(
         let mut frame = NSView::frame(container);
         frame.size.height = height;
         frame.origin.y = NSView::frame(window).size.height - height;
-        if NSView::frame(container) != frame {
+        let current = NSView::frame(container);
+        if current.origin.y != frame.origin.y || current.size.height != frame.size.height {
             let _: () = msg_send![container, setFrame: frame];
         }
         let top = NSView::frame(window).size.height - y - close_rect.size.height;
@@ -66,9 +67,9 @@ fn position_traffic_lights(
             if parent.is_null() {
                 continue;
             }
-            let origin = parent.convertPoint_fromView_(NSPoint::new(x + offset.x, top + offset.y), nil);
+            let origin = parent.convertPoint_fromView_(NSPoint::new(x + offset.0, top + offset.1), nil);
             let frame: NSRect = NSView::frame(button);
-            if frame.origin != origin {
+            if frame.origin.x != origin.x || frame.origin.y != origin.y {
                 button.setFrameOrigin(origin);
             }
         }
@@ -81,7 +82,7 @@ struct WindowState<R: Runtime> {
     window: Window<R>,
     traffic_light_x: Cell<f64>,
     traffic_light_y: Cell<f64>,
-    native_offsets: [cocoa::foundation::NSPoint; 3],
+    native_offsets: [(f64, f64); 3],
     fullscreen: Cell<bool>,
     positioning: Cell<bool>,
     active: Cell<bool>,
@@ -116,34 +117,34 @@ impl<R: Runtime> WindowState<R> {
             let delegate: id = msg_send![window, delegate];
             let center: id = msg_send![objc::class!(NSNotificationCenter), defaultCenter];
             for notification in ["NSViewFrameDidChangeNotification", "NSViewBoundsDidChangeNotification"] {
-            let name = NSString::alloc(nil).init_str(notification);
-            let _: () = msg_send![center, removeObserver: delegate name: name object: nil];
-            if observe {
-                let close = window.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
-                if !close.is_null() {
-                    let parent = close.superview();
-                    let container = if parent.is_null() { nil } else { parent.superview() };
-                    for view in [
-                        close,
-                        window.standardWindowButton_(NSWindowButton::NSWindowMiniaturizeButton),
-                        window.standardWindowButton_(NSWindowButton::NSWindowZoomButton),
-                        parent,
-                        container,
-                    ] {
-                        if !view.is_null() {
-                            let _: () = msg_send![view, setPostsFrameChangedNotifications: YES];
-                            let _: () = msg_send![view, setPostsBoundsChangedNotifications: YES];
-                            let _: () = msg_send![center,
-                                addObserver: delegate
-                                selector: sel!(trafficLightsLayoutChanged:)
-                                name: name
-                                object: view
-                            ];
+                let name = NSString::alloc(nil).init_str(notification);
+                let _: () = msg_send![center, removeObserver: delegate name: name object: nil];
+                if observe {
+                    let close = window.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
+                    if !close.is_null() {
+                        let parent = close.superview();
+                        let container = if parent.is_null() { nil } else { parent.superview() };
+                        for view in [
+                            close,
+                            window.standardWindowButton_(NSWindowButton::NSWindowMiniaturizeButton),
+                            window.standardWindowButton_(NSWindowButton::NSWindowZoomButton),
+                            parent,
+                            container,
+                        ] {
+                            if !view.is_null() {
+                                let _: () = msg_send![view, setPostsFrameChangedNotifications: YES];
+                                let _: () = msg_send![view, setPostsBoundsChangedNotifications: YES];
+                                let _: () = msg_send![center,
+                                    addObserver: delegate
+                                    selector: sel!(trafficLightsLayoutChanged:)
+                                    name: name
+                                    object: view
+                                ];
+                            }
                         }
                     }
                 }
-            }
-            let _: () = msg_send![name, release];
+                let _: () = msg_send![name, release];
             }
         }
     }
@@ -159,7 +160,6 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
 
     let native_offsets = unsafe {
         use cocoa::appkit::NSView;
-        use cocoa::foundation::NSPoint;
         let window = match window.ns_window() {
             Ok(window) => window as id,
             Err(_) => return,
@@ -175,10 +175,10 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             window.standardWindowButton_(NSWindowButton::NSWindowZoomButton),
         ].map(|button| {
             if button.is_null() {
-                NSPoint::new(0.0, 0.0)
+                (0.0, 0.0)
             } else {
                 let frame = NSView::frame(button);
-                NSPoint::new(frame.origin.x - origin.x, frame.origin.y - origin.y)
+                (frame.origin.x - origin.x, frame.origin.y - origin.y)
             }
         })
     };
