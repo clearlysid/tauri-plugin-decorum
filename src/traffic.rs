@@ -45,19 +45,7 @@ fn position_traffic_lights(
         if parent.is_null() {
             return;
         }
-        let container = parent.superview();
-        if container.is_null() {
-            return;
-        }
         let close_rect = NSView::frame(close);
-        let height = close_rect.size.height + 2.0 * y;
-        let mut frame = NSView::frame(container);
-        frame.size.height = height;
-        frame.origin.y = NSView::frame(window).size.height - height;
-        let current = NSView::frame(container);
-        if current.origin.y != frame.origin.y || current.size.height != frame.size.height {
-            let _: () = msg_send![container, setFrame: frame];
-        }
         let top = NSView::frame(window).size.height - y - close_rect.size.height;
         for (button, offset) in buttons.into_iter().zip(offsets) {
             if button.is_null() {
@@ -82,6 +70,7 @@ fn position_traffic_lights(
 #[derive(Debug)]
 struct WindowState<R: Runtime> {
     window: Window<R>,
+    native_window: usize,
     traffic_light_x: Cell<f64>,
     traffic_light_y: Cell<f64>,
     native_offsets: [(f64, f64); 3],
@@ -96,15 +85,46 @@ impl<R: Runtime> WindowState<R> {
         if !self.active.get() || self.fullscreen.get() || self.positioning.replace(true) {
             return;
         }
-        if let Ok(window) = self.window.ns_window() {
-            position_traffic_lights(
-                UnsafeWindowHandle(window),
+        position_traffic_lights(
+                UnsafeWindowHandle(self.native_window as *mut std::ffi::c_void),
                 self.traffic_light_x.get(),
                 self.traffic_light_y.get(),
                 &self.native_offsets,
             );
-        }
         self.positioning.set(false);
+    }
+
+    fn layout_titlebar(&self) {
+        use cocoa::appkit::{NSView, NSWindow, NSWindowButton, NSWindowStyleMask};
+        use cocoa::base::id;
+        unsafe {
+            let window = self.native_window as id;
+            if self.fullscreen.get() || window.styleMask().contains(NSWindowStyleMask::NSFullScreenWindowMask) {
+                return;
+            }
+            let close = window.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
+            if close.is_null() {
+                return;
+            }
+            let host: id = msg_send![close, window];
+            let parent = close.superview();
+            if host != window || parent.is_null() {
+                return;
+            }
+            let container = parent.superview();
+            if container.is_null() {
+                return;
+            }
+            let height = NSView::frame(close).size.height + 2.0 * self.traffic_light_y.get();
+            let mut frame = NSView::frame(container);
+            let current_y = frame.origin.y;
+            let current_height = frame.size.height;
+            frame.origin.y = NSView::frame(window).size.height - height;
+            frame.size.height = height;
+            if current_y != frame.origin.y || current_height != height {
+                let _: () = msg_send![container, setFrame: frame];
+            }
+        }
     }
 
     fn observe_layout(&self, observe: bool) {
@@ -112,10 +132,7 @@ impl<R: Runtime> WindowState<R> {
         use cocoa::base::{id, nil, YES};
         use cocoa::foundation::NSString;
         unsafe {
-            let window = match self.window.ns_window() {
-                Ok(window) => window as id,
-                Err(_) => return,
-            };
+            let window = self.native_window as id;
             let delegate: id = msg_send![window, delegate];
             let center: id = msg_send![objc::class!(NSNotificationCenter), defaultCenter];
             for notification in ["NSViewFrameDidChangeNotification", "NSViewBoundsDidChangeNotification"] {
@@ -225,7 +242,10 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             unsafe {
                 let super_del: id = *this.get_ivar("super_delegate");
                 let _: () = msg_send![super_del, windowDidResize: notification];
-                with_window_state(this, |state: &WindowState<R>| state.position());
+                with_window_state(this, |state: &WindowState<R>| {
+                    state.layout_titlebar();
+                    state.position();
+                });
             }
         }
         extern "C" fn on_layout_changed<R: Runtime>(this: &Object, _cmd: Sel, _notification: id) {
@@ -251,7 +271,10 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
             unsafe {
                 let super_del: id = *this.get_ivar("super_delegate");
                 let _: () = msg_send![super_del, windowDidBecomeKey: notification];
-                with_window_state(this, |state: &WindowState<R>| state.position());
+                with_window_state(this, |state: &WindowState<R>| {
+                    state.layout_titlebar();
+                    state.position();
+                });
             }
         }
         extern "C" fn on_window_did_resign_key(this: &Object, _cmd: Sel, notification: id) {
@@ -331,6 +354,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
         ) {
             unsafe {
                 with_window_state(&*this, |state: &WindowState<R>| {
+                    state.fullscreen.set(true);
                     state.observe_layout(true);
                     state.position();
                     state
@@ -359,6 +383,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
 
                     state.fullscreen.set(false);
                     state.observe_layout(true);
+                    state.layout_titlebar();
                     state.position();
                 });
             }
@@ -394,6 +419,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
                 with_window_state(this, |state: &WindowState<R>| {
                     state.fullscreen.set(false);
                     state.observe_layout(true);
+                    state.layout_titlebar();
                     state.position();
                 });
             }
@@ -434,6 +460,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
 
         let app_state = WindowState { 
             window,
+            native_window: ns_win as usize,
             traffic_light_x: Cell::new(WINDOW_CONTROL_PAD_X),
             traffic_light_y: Cell::new(WINDOW_CONTROL_PAD_Y),
             native_offsets,
@@ -483,6 +510,7 @@ pub fn setup_traffic_light_positioner<R: Runtime>(window: Window<R>) {
         let delegate: id = msg_send![ns_win, delegate];
         with_window_state(&*delegate, |state: &WindowState<R>| {
             state.observe_layout(true);
+            state.layout_titlebar();
             state.position();
         });
     }
@@ -517,6 +545,7 @@ pub fn update_traffic_light_positions(window: &tauri::WebviewWindow, x: f64, y: 
         let state: &WindowState<Wry> = &*(app_box as *const WindowState<Wry>);
         state.traffic_light_x.set(x);
         state.traffic_light_y.set(y);
+        state.layout_titlebar();
         state.position();
     }
 }
